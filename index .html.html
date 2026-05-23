@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DronAIr · Mission Control v5</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#040c18;--bg2:#071425;--bg3:#0a1c30;--bg4:#0d2240;--blue:#1560FF;--blue2:#4a7aaf;--blue3:#3a6a9f;--blue-dim:rgba(21,96,255,0.08);--blue-glow:rgba(21,96,255,0.18);--text:#e8f0ff;--text2:#8aa4cc;--text3:#3a5070;--green:#1fcb8a;--green-bg:rgba(31,203,138,0.10);--amber:#f0a830;--amber-bg:rgba(240,168,48,0.10);--coral:#e05a30;--coral-bg:rgba(224,90,48,0.10);--purple:#8a7aee;--purple-bg:rgba(138,122,238,0.10);--teal:#1dc8e8;--teal-bg:rgba(29,200,232,0.10);--border:rgba(21,96,255,0.18);--border2:rgba(21,96,255,0.35);--r:6px;--r2:10px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Rajdhani',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(21,96,255,0.12),transparent);pointer-events:none;z-index:0;animation:scan 12s linear infinite;}
+@keyframes scan{0%{top:-1%}100%{top:101%}}
+.layout{display:flex;min-height:100vh;position:relative;z-index:1;}
+.sidebar{width:260px;min-height:100vh;background:rgba(7,20,37,0.97);border-right:1px solid var(--border);position:sticky;top:0;height:100vh;overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column;}
+.sidebar::-webkit-scrollbar{width:3px;}.sidebar::-webkit-scrollbar-thumb{background:var(--border);}
+.logo-wrap{padding:1.25rem 1.25rem 1rem;border-bottom:1px solid var(--border);}
+.logo-row{display:flex;align-items:center;gap:10px;margin-bottom:4px;}
+.logo-hex{width:38px;height:38px;border:1.5px solid var(--blue);border-radius:7px;display:flex;align-items:center;justify-content:center;background:var(--blue-dim);flex-shrink:0;}
+.logo-name{font-family:'Orbitron',monospace;font-size:17px;font-weight:700;letter-spacing:0.05em;}
+.logo-name span{color:var(--blue);}
+.logo-tag{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--text3);letter-spacing:0.15em;margin-top:1px;}
+.sync-indicator{font-family:'Share Tech Mono',monospace;font-size:8px;padding:2px 8px;border-radius:20px;letter-spacing:0.08em;margin-top:4px;display:inline-block;}
+.sync-ok{background:var(--green-bg);color:var(--green);border:1px solid rgba(31,203,138,0.2);}
+.sync-saving{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(21,96,255,0.2);}
+.sync-err{background:var(--coral-bg);color:var(--coral);border:1px solid rgba(224,90,48,0.2);}
+.s-section{padding:0.9rem 1.25rem;border-bottom:1px solid var(--border);}
+.s-label{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3);letter-spacing:0.18em;margin-bottom:0.6rem;display:flex;align-items:center;gap:6px;}
+.s-label::before{content:'';width:10px;height:1px;background:var(--blue);opacity:0.5;}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.stat-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;position:relative;overflow:hidden;}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.stat-card.c-blue::before{background:var(--blue);}.stat-card.c-green::before{background:var(--green);}.stat-card.c-amber::before{background:var(--amber);}.stat-card.c-coral::before{background:var(--coral);}
+.stat-val{font-family:'Orbitron',monospace;font-size:16px;font-weight:700;}
+.stat-card.c-blue .stat-val{color:var(--blue);}.stat-card.c-green .stat-val{color:var(--green);}.stat-card.c-amber .stat-val{color:var(--amber);}.stat-card.c-coral .stat-val{color:var(--coral);}
+.stat-lbl{font-size:8px;color:var(--text3);font-family:'Share Tech Mono',monospace;margin-top:2px;letter-spacing:0.05em;}
+.prog-meta{display:flex;justify-content:space-between;font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3);margin-bottom:4px;}
+.prog-track{height:3px;background:var(--bg4);border-radius:2px;overflow:hidden;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--blue3),var(--blue));border-radius:2px;transition:width 0.6s ease;}
+.log-section{padding:0.9rem 1.25rem;border-bottom:1px solid var(--border);}
+.log-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;}
+.log-entries{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text2);line-height:1.7;max-height:120px;overflow-y:auto;margin-bottom:7px;}
+.log-entries::-webkit-scrollbar{width:2px;}.log-entries::-webkit-scrollbar-thumb{background:var(--border);}
+.log-entry{padding:2px 0;border-bottom:1px solid rgba(21,96,255,0.06);}
+.log-entry-date{color:var(--blue);font-size:8px;}
+.log-input-wrap{display:flex;gap:5px;align-items:flex-start;}
+.log-input{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:9px;font-family:'Share Tech Mono',monospace;padding:5px 7px;outline:none;resize:none;height:44px;line-height:1.5;}
+.log-input:focus{border-color:var(--blue);}
+.log-add-btn{background:var(--blue);border:none;border-radius:var(--r);color:white;font-size:8px;font-family:'Orbitron',monospace;font-weight:700;padding:5px 9px;cursor:pointer;white-space:nowrap;align-self:flex-end;}
+.log-clear-btn{background:none;border:1px solid var(--border);border-radius:var(--r);color:var(--text3);font-size:8px;font-family:'Share Tech Mono',monospace;padding:2px 6px;cursor:pointer;}
+.log-clear-btn:hover{border-color:var(--coral);color:var(--coral);}
+.log-empty{color:var(--text3);font-style:italic;font-size:9px;}
+.nav-section{padding:0.8rem 1rem;}
+.nav-btn{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--r);border:none;background:transparent;color:var(--text2);font-size:12px;font-family:'Rajdhani',sans-serif;font-weight:600;cursor:pointer;text-align:left;transition:all 0.15s;width:100%;letter-spacing:0.03em;margin-bottom:2px;}
+.nav-btn:hover{background:var(--bg3);color:var(--text);}
+.nav-btn.active{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(21,96,255,0.2);}
+.nav-icon{font-size:14px;width:16px;text-align:center;}
+.export-wrap{padding:1rem 1.25rem;margin-top:auto;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:7px;}
+.export-btn{width:100%;font-family:'Orbitron',monospace;font-size:9px;font-weight:700;padding:8px;border-radius:var(--r);border:1px solid var(--green);background:var(--green-bg);color:var(--green);cursor:pointer;letter-spacing:0.08em;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:5px;}
+.export-btn:hover{background:var(--green);color:var(--bg);}
+.drive-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:7px 10px;border-radius:var(--r);border:1px solid rgba(21,96,255,0.25);background:var(--blue-dim);color:var(--blue);font-size:10px;font-family:'Share Tech Mono',monospace;cursor:pointer;text-decoration:none;letter-spacing:0.06em;transition:all 0.15s;width:100%;}
+.drive-btn:hover{background:var(--blue);color:white;}
+.main{flex:1;min-width:0;}
+.page-head{padding:1.5rem 2rem 1.25rem;border-bottom:1px solid var(--border);position:relative;}
+.page-head::after{content:'';position:absolute;bottom:-1px;left:2rem;width:80px;height:1px;background:var(--blue);box-shadow:0 0 8px var(--blue);}
+.page-head h1{font-family:'Orbitron',monospace;font-size:18px;font-weight:700;letter-spacing:0.04em;}
+.page-head h1 span{color:var(--blue);}
+.page-head p{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3);margin-top:5px;letter-spacing:0.12em;}
+.content{padding:1.5rem 2rem;}
+.panel{display:none;}.panel.active{display:block;}
+.briefing-wrap{background:linear-gradient(135deg,rgba(21,96,255,0.08),rgba(21,96,255,0.03));border:1px solid rgba(21,96,255,0.35);border-radius:var(--r2);padding:1.1rem 1.4rem;margin-bottom:1.5rem;}
+.briefing-header{display:flex;align-items:center;gap:9px;margin-bottom:0.7rem;}
+.briefing-title{font-family:'Orbitron',monospace;font-size:10px;font-weight:700;color:var(--blue);letter-spacing:0.1em;}
+.briefing-sub{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--text3);margin-top:2px;letter-spacing:0.1em;}
+.briefing-textarea{width:100%;background:rgba(4,12,24,0.6);border:1px solid rgba(21,96,255,0.25);border-radius:var(--r);color:var(--text);font-size:12px;font-family:'Rajdhani',sans-serif;font-weight:500;padding:10px 12px;outline:none;resize:none;height:100px;line-height:1.6;transition:border-color 0.2s;}
+.briefing-textarea::placeholder{color:var(--text3);font-style:italic;}
+.briefing-textarea:focus{border-color:rgba(21,96,255,0.6);}
+.briefing-footer{display:flex;justify-content:space-between;align-items:center;margin-top:6px;}
+.briefing-saved{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--text3);letter-spacing:0.08em;transition:color 0.3s;}
+.briefing-saved.ok{color:var(--green);}
+.week-view{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:1rem;margin-bottom:1.5rem;}
+.week-title{font-family:'Orbitron',monospace;font-size:9px;font-weight:700;color:var(--text2);letter-spacing:0.08em;margin-bottom:0.8rem;display:flex;align-items:center;gap:7px;}
+.week-title::before{content:'';width:3px;height:11px;background:var(--amber);border-radius:1px;}
+.week-days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+.week-day{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:7px 5px;text-align:center;min-height:80px;}
+.week-day.today-col{border-color:var(--blue);background:rgba(21,96,255,0.06);}
+.week-day.libre{border-color:rgba(31,203,138,0.25);}
+.week-day-name{font-family:'Share Tech Mono',monospace;font-size:7px;color:var(--text3);letter-spacing:0.1em;margin-bottom:3px;}
+.week-day-num{font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px;}
+.week-day.today-col .week-day-num{color:var(--blue);}
+.week-turn{font-size:7px;font-family:'Share Tech Mono',monospace;padding:2px 3px;border-radius:3px;margin-bottom:2px;}
+.week-libre-badge{font-size:7px;font-family:'Share Tech Mono',monospace;color:var(--green);letter-spacing:0.05em;margin-top:2px;}
+.card-section{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:1.1rem;margin-bottom:1.25rem;}
+.card-title{font-family:'Orbitron',monospace;font-size:9px;font-weight:700;letter-spacing:0.08em;color:var(--text2);margin-bottom:0.9rem;display:flex;align-items:center;gap:7px;}
+.card-title::before{content:'';width:3px;height:11px;background:var(--blue);border-radius:1px;}
+.tasks-toolbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1.25rem;}
+.f-btn{font-size:10px;font-family:'Share Tech Mono',monospace;padding:4px 11px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;letter-spacing:0.07em;transition:all 0.15s;}
+.f-btn:hover{border-color:var(--border2);color:var(--text2);}
+.f-btn.active{background:var(--blue-dim);border-color:rgba(21,96,255,0.35);color:var(--blue);}
+.phase{margin-bottom:1.5rem;}
+.phase-head{display:flex;align-items:center;gap:10px;margin-bottom:0.6rem;cursor:pointer;user-select:none;padding:9px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);transition:border-color 0.2s;}
+.phase-head:hover{border-color:var(--border2);}
+.phase-line{width:3px;height:20px;border-radius:2px;flex-shrink:0;}
+.phase-info{flex:1;}
+.phase-info h2{font-family:'Orbitron',monospace;font-size:10px;font-weight:700;letter-spacing:0.04em;}
+.phase-info p{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--text3);margin-top:2px;letter-spacing:0.07em;}
+.phase-pct{font-family:'Orbitron',monospace;font-size:12px;font-weight:700;}
+.phase-ct{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3);margin-left:5px;}
+.phase-chev{font-size:9px;color:var(--text3);transition:transform 0.2s;margin-left:5px;}
+.phase.collapsed .phase-chev{transform:rotate(-90deg);}
+.prog-mini{height:2px;background:var(--bg4);border-radius:1px;margin-bottom:6px;overflow:hidden;}
+.prog-mini-fill{height:100%;border-radius:1px;transition:width 0.4s;}
+.phase.collapsed .tasks-wrap,.phase.collapsed .prog-mini{display:none;}
+.tasks-wrap{display:flex;flex-direction:column;gap:4px;}
+.task{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;transition:border-color 0.15s;}
+.task:hover{border-color:var(--border2);}
+.task-main{display:flex;align-items:flex-start;gap:10px;padding:9px 12px;cursor:pointer;position:relative;}
+.task-main::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:transparent;transition:background 0.2s;}
+.task:hover .task-main::before{background:var(--blue);opacity:0.4;}
+.task.done .task-main::before{background:var(--green);opacity:0.6;}
+.task.done .task-title{text-decoration:line-through;color:var(--text3);}
+.task-chk{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--text3);flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;}
+.task.done .task-chk{background:var(--green);border-color:var(--green);box-shadow:0 0 8px rgba(31,203,138,0.3);}
+.chk-dot{width:5px;height:5px;border-radius:50%;background:var(--bg);display:none;}
+.task.done .chk-dot{display:block;}
+.task-body{flex:1;min-width:0;}
+.task-title{font-size:12px;font-weight:600;line-height:1.4;color:var(--text);}
+.task-meta{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;align-items:center;}
+.tag{font-size:8px;font-family:'Share Tech Mono',monospace;padding:2px 6px;border-radius:20px;letter-spacing:0.07em;text-transform:uppercase;}
+.tag-urgente{background:var(--coral-bg);color:var(--coral);border:1px solid rgba(224,90,48,0.2);}
+.tag-coste{background:var(--amber-bg);color:var(--amber);border:1px solid rgba(240,168,48,0.2);}
+.tag-gratis{background:var(--green-bg);color:var(--green);border:1px solid rgba(31,203,138,0.2);}
+.tag-formacion{background:var(--teal-bg);color:var(--teal);border:1px solid rgba(29,200,232,0.2);}
+.tag-comercial{background:var(--purple-bg);color:var(--purple);border:1px solid rgba(138,122,238,0.2);}
+.task-deadline{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--text3);}
+.task-deadline.near{color:var(--coral);}.task-deadline.soon{color:var(--amber);}
+.task-actions{display:flex;align-items:center;gap:5px;flex-shrink:0;margin-top:1px;}
+.task-del{background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;padding:0 2px;opacity:0;transition:opacity 0.15s;}
+.task:hover .task-del{opacity:1;}
+.task-del:hover{color:var(--coral);}
+.task-link-btn{background:none;border:1px solid var(--border);border-radius:var(--r);color:var(--text3);font-size:8px;font-family:'Share Tech Mono',monospace;cursor:pointer;padding:2px 7px;transition:all 0.15s;}
+.task-link-btn:hover{border-color:var(--blue);color:var(--blue);}
+.task-link-btn.has-link{border-color:rgba(21,96,255,0.35);color:var(--blue);background:var(--blue-dim);}
+.link-edit{display:none;border-top:1px solid var(--border);padding:9px 12px;background:var(--bg3);}
+.link-edit.open{display:block;}
+.link-edit-label{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--text3);margin-bottom:4px;letter-spacing:0.1em;}
+.link-edit input{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:11px;font-family:'Rajdhani',sans-serif;padding:5px 8px;outline:none;}
+.link-edit input:focus{border-color:var(--blue);}
+.task-add-bar{display:flex;gap:7px;margin-bottom:1.5rem;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:9px 13px;align-items:center;flex-wrap:wrap;}
+.task-add-bar input[type=text]{flex:1;min-width:180px;background:transparent;border:none;outline:none;font-size:13px;font-family:'Rajdhani',sans-serif;font-weight:500;color:var(--text);}
+.task-add-bar input[type=text]::placeholder{color:var(--text3);}
+.task-add-bar input[type=date],.task-add-bar select{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text2);font-size:11px;font-family:'Rajdhani',sans-serif;padding:4px 7px;outline:none;}
+.add-btn{background:var(--blue);border:none;border-radius:var(--r);color:white;font-size:9px;font-family:'Orbitron',monospace;font-weight:700;padding:6px 14px;cursor:pointer;white-space:nowrap;letter-spacing:0.05em;transition:all 0.2s;}
+.add-btn:hover{box-shadow:0 0 12px rgba(21,96,255,0.5);}
+.add-bar{display:flex;gap:7px;margin-bottom:1.25rem;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:9px 13px;align-items:center;flex-wrap:wrap;}
+.add-bar input[type=text]{flex:1;min-width:160px;background:transparent;border:none;outline:none;font-size:13px;font-family:'Rajdhani',sans-serif;font-weight:500;color:var(--text);}
+.add-bar input[type=text]::placeholder{color:var(--text3);}
+.add-bar input[type=date],.add-bar input[type=time],.add-bar select{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text2);font-size:11px;font-family:'Rajdhani',sans-serif;padding:5px 8px;outline:none;}
+.cal-wrap{max-width:100%;}
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;}
+.cal-nav-btn{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text2);font-family:'Orbitron',monospace;font-size:9px;font-weight:700;padding:6px 14px;cursor:pointer;letter-spacing:0.06em;transition:all 0.15s;}
+.cal-nav-btn:hover{border-color:var(--blue);color:var(--blue);}
+.cal-month-title{font-family:'Orbitron',monospace;font-size:14px;font-weight:700;color:var(--blue);letter-spacing:0.06em;}
+.cal-legend{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:1rem;}
+.cal-leg-item{display:flex;align-items:center;gap:4px;font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--text3);letter-spacing:0.07em;}
+.cal-leg-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.cal-dow{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--text3);text-align:center;padding:5px 2px;letter-spacing:0.1em;}
+.cal-cell{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);min-height:72px;padding:4px;position:relative;transition:border-color 0.15s;}
+.cal-cell:hover{border-color:var(--border2);}
+.cal-cell.today{border-color:var(--blue);box-shadow:0 0 8px rgba(21,96,255,0.15);}
+.cal-cell.other-month{opacity:0.3;}
+.cal-cell.has-event{border-color:rgba(21,96,255,0.3);}
+.cal-day-num{font-family:'Orbitron',monospace;font-size:9px;font-weight:700;color:var(--text3);margin-bottom:3px;}
+.cal-cell.today .cal-day-num{color:var(--blue);}
+.cal-event{font-family:'Share Tech Mono',monospace;font-size:7px;padding:1px 3px;border-radius:2px;margin-bottom:2px;letter-spacing:0.02em;line-height:1.3;word-break:break-word;}
+.ev-N{background:rgba(21,96,255,0.15);color:#7aabff;border-left:2px solid var(--blue);}
+.ev-L{background:rgba(31,203,138,0.12);color:var(--green);border-left:2px solid var(--green);}
+.ev-PMICA{background:rgba(240,168,48,0.15);color:var(--amber);border-left:2px solid var(--amber);}
+.ev-LFN{background:rgba(138,122,238,0.15);color:var(--purple);border-left:2px solid var(--purple);}
+.ev-VN{background:rgba(29,200,232,0.15);color:var(--teal);border-left:2px solid var(--teal);}
+.ev-deadline{background:rgba(224,90,48,0.18);color:var(--coral);border-left:2px solid var(--coral);}
+.ev-personal{background:rgba(255,157,226,0.15);color:#ff9de2;border-left:2px solid #ff9de2;}
+.ev-sport{background:rgba(31,203,138,0.12);color:var(--green);border-left:2px solid var(--green);}
+.ev-formacion{background:rgba(21,96,255,0.13);color:#7aabff;border-left:2px solid var(--blue);}
+.cal-ev-del{background:none;border:none;color:rgba(255,255,255,0.2);cursor:pointer;font-size:7px;float:right;line-height:1;padding:0 0 0 2px;transition:color 0.15s;}
+.cal-ev-del:hover{color:var(--coral);}
+.contact-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-bottom:1.5rem;}
+.contact-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:1rem;transition:border-color 0.15s;}
+.contact-card:hover{border-color:var(--border2);}
+.contact-head{display:flex;align-items:center;gap:9px;margin-bottom:9px;}
+.contact-avatar{width:35px;height:35px;border-radius:50%;background:var(--blue-dim);border:1px solid rgba(21,96,255,0.3);display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:10px;font-weight:700;color:var(--blue);flex-shrink:0;}
+.contact-name{font-size:12px;font-weight:700;color:var(--text);}
+.contact-org{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--blue);letter-spacing:0.08em;margin-top:2px;}
+.contact-cat{font-family:'Share Tech Mono',monospace;font-size:7px;padding:1px 6px;border-radius:20px;letter-spacing:0.06em;margin-top:3px;display:inline-block;}
+.cat-institucional{background:var(--teal-bg);color:var(--teal);border:1px solid rgba(29,200,232,0.2);}
+.cat-consultora{background:var(--purple-bg);color:var(--purple);border:1px solid rgba(138,122,238,0.2);}
+.cat-formacion{background:var(--green-bg);color:var(--green);border:1px solid rgba(31,203,138,0.2);}
+.cat-asociacion{background:var(--amber-bg);color:var(--amber);border:1px solid rgba(240,168,48,0.2);}
+.cat-proveedor{background:var(--coral-bg);color:var(--coral);border:1px solid rgba(224,90,48,0.2);}
+.contact-fields{display:flex;flex-direction:column;gap:3px;margin-top:6px;}
+.contact-field{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text2);}
+.contact-field-icon{font-size:9px;width:13px;text-align:center;flex-shrink:0;color:var(--text3);}
+.contact-field a{color:var(--blue);text-decoration:none;}
+.contact-field a:hover{text-decoration:underline;}
+.contact-notes{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3);margin-top:5px;font-style:italic;line-height:1.5;}
+.contact-actions{display:flex;gap:5px;margin-top:9px;}
+.contact-del{background:none;border:1px solid var(--border);border-radius:var(--r);color:var(--text3);font-size:8px;font-family:'Share Tech Mono',monospace;cursor:pointer;padding:3px 8px;transition:all 0.15s;}
+.contact-del:hover{border-color:var(--coral);color:var(--coral);}
+.contact-form-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:9px;}
+.cf label{display:block;font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--text3);letter-spacing:0.1em;margin-bottom:3px;}
+.cf input,.cf select,.cf textarea{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:11px;font-family:'Rajdhani',sans-serif;padding:5px 8px;outline:none;}
+.cf input:focus,.cf select:focus{border-color:var(--blue);}
+.cf textarea{resize:none;height:52px;line-height:1.5;}
+.contact-filter-row{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:1.1rem;}
+.coste-form{display:grid;grid-template-columns:1fr 1fr auto auto;gap:7px;align-items:end;margin-bottom:1rem;}
+.cf-field label{display:block;font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3);letter-spacing:0.1em;margin-bottom:4px;}
+.cf-field input,.cf-field select{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:13px;font-family:'Rajdhani',sans-serif;font-weight:500;padding:7px 10px;outline:none;}
+.cf-field input:focus{border-color:var(--blue);}
+.btn-inline{font-family:'Orbitron',monospace;font-size:9px;font-weight:700;padding:8px 13px;border-radius:var(--r);border:none;cursor:pointer;letter-spacing:0.06em;transition:all 0.2s;white-space:nowrap;}
+.btn-blue{background:var(--blue);color:white;}
+.btn-blue:hover{box-shadow:0 0 12px rgba(21,96,255,0.4);}
+.coste-list{display:flex;flex-direction:column;gap:4px;}
+.coste-item{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);}
+.coste-item-name{flex:1;font-size:12px;font-weight:600;color:var(--text);}
+.coste-item-date{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3);}
+.coste-item-amount{font-family:'Orbitron',monospace;font-size:12px;font-weight:700;}
+.neg{color:var(--coral);}.pos{color:var(--green);}
+.coste-item-del{background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;opacity:0;transition:opacity 0.15s;}
+.coste-item:hover .coste-item-del{opacity:1;}
+.coste-item-del:hover{color:var(--coral);}
+.coste-total{display:flex;justify-content:space-between;align-items:center;padding:9px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);margin-top:7px;}
+.coste-total-lbl{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3);letter-spacing:0.1em;}
+.coste-total-val{font-family:'Orbitron',monospace;font-size:15px;font-weight:700;}
+.modal-overlay{position:fixed;inset:0;background:rgba(4,12,24,0.92);z-index:100;display:none;align-items:center;justify-content:center;padding:1rem;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--bg2);border:1px solid var(--blue);border-radius:var(--r2);padding:1.5rem;max-width:640px;width:100%;position:relative;max-height:90vh;overflow-y:auto;}
+.modal-title{font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:var(--blue);margin-bottom:1rem;letter-spacing:0.06em;}
+.modal textarea{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:10px;font-family:'Share Tech Mono',monospace;padding:12px;outline:none;height:320px;resize:none;line-height:1.6;letter-spacing:0.03em;}
+.modal-actions{display:flex;gap:8px;margin-top:1rem;justify-content:flex-end;}
+.modal-close{position:absolute;top:1rem;right:1rem;background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;}
+.modal-close:hover{color:var(--text);}
+.footer{padding:1.25rem 2rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
+.footer p{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text3);letter-spacing:0.1em;}
+.reset-btn{font-family:'Share Tech Mono',monospace;font-size:9px;background:none;border:1px solid var(--border);border-radius:var(--r);color:var(--text3);padding:5px 12px;cursor:pointer;transition:all 0.15s;}
+.reset-btn:hover{border-color:var(--coral);color:var(--coral);}
+@media(max-width:768px){.layout{flex-direction:column;}.sidebar{width:100%;height:auto;position:static;}.contact-form-grid{grid-template-columns:1fr 1fr;}.coste-form{grid-template-columns:1fr 1fr;}.cal-grid{gap:2px;}.cal-cell{min-height:50px;}.cal-event{font-size:6px;}.week-days{grid-template-columns:repeat(7,1fr);}}
+</style>
+</head>
+<body>
+
+
+
+<!-- EXPORT MODAL -->
+<div class="modal-overlay" id="modal-export">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-export')">✕</button>
+    <div class="modal-title">// BRIEFING PARA CLAUDE · COPIAR Y PEGAR</div>
+    <textarea id="export-text" readonly></textarea>
+    <div class="modal-actions">
+      <button class="btn-inline btn-blue" onclick="copyExport()">COPIAR AL PORTAPAPELES</button>
+      <button class="btn-inline" style="background:transparent;border:1px solid var(--border);color:var(--text2);font-family:Orbitron,monospace;font-size:9px;padding:8px 13px;border-radius:6px;cursor:pointer;" onclick="closeModal('modal-export')">CERRAR</button>
+    </div>
+  </div>
+</div>
+
+<div class="layout">
+<aside class="sidebar">
+  <div class="logo-wrap">
+    <div class="logo-row">
+      <div class="logo-hex">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#1560FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+          <polygon points="12,2 22,8.5 22,15.5 12,22 2,15.5 2,8.5"/><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="8.5" x2="22" y2="8.5"/><line x1="2" y1="15.5" x2="22" y2="15.5"/>
+        </svg>
+      </div>
+      <div>
+        <div class="logo-name">Dron<span>AI</span>r</div>
+        <div class="logo-tag">MISSION CONTROL · v5.2</div>
+      </div>
+    </div>
+    <span class="sync-indicator sync-saving" id="sync-badge">✓ LISTO</span>
+  </div>
+
+  <div class="s-section">
+    <div class="s-label">PROGRESO</div>
+    <div class="stat-grid">
+      <div class="stat-card c-blue"><div class="stat-val" id="s-total">0</div><div class="stat-lbl">TAREAS</div></div>
+      <div class="stat-card c-green"><div class="stat-val" id="s-done">0</div><div class="stat-lbl">HECHAS</div></div>
+      <div class="stat-card c-amber"><div class="stat-val" id="s-urgent">0</div><div class="stat-lbl">URGENTES</div></div>
+      <div class="stat-card c-coral"><div class="stat-val" id="s-near">0</div><div class="stat-lbl">PRÓX. 7D</div></div>
+    </div>
+    <div style="margin-top:9px;">
+      <div class="prog-meta"><span>MAY 2026</span><span id="g-pct-txt">0%</span><span>ENE 2027</span></div>
+      <div class="prog-track"><div class="prog-fill" id="g-bar" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div class="s-section">
+    <div class="s-label">ECONOMÍA</div>
+    <div class="stat-grid">
+      <div class="stat-card c-coral"><div class="stat-val" id="s-gasto">0€</div><div class="stat-lbl">GASTOS</div></div>
+      <div class="stat-card c-green"><div class="stat-val" id="s-ingreso">0€</div><div class="stat-lbl">INGRESOS</div></div>
+    </div>
+  </div>
+
+  <div class="log-section">
+    <div class="log-header">
+      <div class="s-label" style="margin-bottom:0;">LOG ACTIVIDAD</div>
+      <button class="log-clear-btn" onclick="clearLog()">LIMPIAR</button>
+    </div>
+    <div class="log-entries" id="log-entries"><div class="log-empty">// Cargando...</div></div>
+    <div class="log-input-wrap">
+      <textarea class="log-input" id="log-input" placeholder="Novedad del día... Enter para añadir" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();addLog();}"></textarea>
+      <button class="log-add-btn" onclick="addLog()">+</button>
+    </div>
+  </div>
+
+  <div class="nav-section">
+    <div class="s-label">MÓDULOS</div>
+    <button class="nav-btn active" onclick="showPanel('semana',this)"><span class="nav-icon">📅</span>Esta semana</button>
+    <button class="nav-btn" onclick="showPanel('tareas',this)"><span class="nav-icon">⚡</span>Plan de tareas</button>
+    <button class="nav-btn" onclick="showPanel('calendario',this)"><span class="nav-icon">📆</span>Calendario</button>
+    <button class="nav-btn" onclick="showPanel('contactos',this)"><span class="nav-icon">👤</span>Contactos</button>
+    <button class="nav-btn" onclick="showPanel('economia',this)"><span class="nav-icon">€</span>Economía</button>
+  </div>
+
+  <div class="export-wrap">
+    <a class="drive-btn" href="https://drive.google.com/drive/folders/1BS8m7-sMmx7TjwFy3ENxzr2VRirSkOAG" target="_blank">⚡ DRIVE DRONAIR</a>
+    <button class="export-btn" onclick="openExport()"><span>⚡</span>EXPORTAR PARA CLAUDE</button>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="page-head">
+    <h1>DRON<span>AI</span>r · MISSION CONTROL</h1>
+    <p>DATOS EN LOCAL · EXPORTAR PARA CLAUDE · v5.2 · <span id="head-date"></span></p>
+  </div>
+
+  <div class="content">
+
+    <!-- SEMANA -->
+    <div class="panel active" id="panel-semana">
+      <div class="briefing-wrap">
+        <div class="briefing-header">
+          <span style="font-size:16px;">📡</span>
+          <div>
+            <div class="briefing-title">// BRIEFING PARA CLAUDE</div>
+            <div class="briefing-sub">ESCRIBE AQUÍ LO MÁS IMPORTANTE · SALE PRIMERO AL EXPORTAR PARA CLAUDE</div>
+          </div>
+        </div>
+        <textarea class="briefing-textarea" id="briefing-text" placeholder="Ej: Hoy llama Miguel Esparza (ai2 UPV). Preinscripción IES Serrà Perenxisa abierta hasta el 28. Estado: cargado pero con energía..." oninput="saveBriefing()"></textarea>
+        <div class="briefing-footer">
+          <span class="briefing-saved" id="briefing-saved">// Escribe y se guarda solo</span>
+          <span style="font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--text3);">AUTO-GUARDADO EN LA NUBE ☁</span>
+        </div>
+      </div>
+
+      <div class="week-view">
+        <div class="week-title">VISTA SEMANAL · TURNOS Y HUECOS LIBRES</div>
+        <div class="week-days" id="week-days-grid"></div>
+      </div>
+
+      <div class="card-section">
+        <div class="card-title">DEADLINES PRÓXIMOS · 14 DÍAS</div>
+        <div id="near-tasks-list"></div>
+      </div>
+    </div>
+
+    <!-- TAREAS -->
+    <div class="panel" id="panel-tareas">
+      <div class="task-add-bar">
+        <input type="text" id="new-input" placeholder="Nueva tarea · Enter o botón..." onkeydown="if(event.key==='Enter')addTask()"/>
+        <input type="date" id="new-date" title="Fecha límite"/>
+        <select id="new-phase">
+          <option value="0">Fase 1 · Licencias</option>
+          <option value="1">Fase 2 · Visibilidad</option>
+          <option value="2">Fase 3 · Licitación</option>
+          <option value="3">Fase 4 · Despegue</option>
+        </select>
+        <select id="new-tag">
+          <option value="urgente">Urgente</option>
+          <option value="gratis">Sin coste</option>
+          <option value="coste">Con coste</option>
+          <option value="formacion">Formación</option>
+          <option value="comercial">Comercial</option>
+        </select>
+        <button class="add-btn" onclick="addTask()">+ AÑADIR</button>
+      </div>
+      <div class="tasks-toolbar">
+        <button class="f-btn active" onclick="setFilter('all',this)">TODAS</button>
+        <button class="f-btn" onclick="setFilter('urgente',this)">URGENTE</button>
+        <button class="f-btn" onclick="setFilter('gratis',this)">SIN COSTE</button>
+        <button class="f-btn" onclick="setFilter('coste',this)">CON COSTE</button>
+        <button class="f-btn" onclick="setFilter('formacion',this)">FORMACIÓN</button>
+        <button class="f-btn" onclick="setFilter('comercial',this)">COMERCIAL</button>
+        <button class="f-btn" onclick="setFilter('pendiente',this)">PENDIENTES</button>
+      </div>
+      <div id="phases-container"></div>
+    </div>
+
+    <!-- CALENDARIO -->
+    <div class="panel" id="panel-calendario">
+      <div class="cal-wrap">
+        <div class="cal-legend">
+          <div class="cal-leg-item"><div class="cal-leg-dot" style="background:var(--blue);"></div>N (NOCHE)</div>
+          <div class="cal-leg-item"><div class="cal-leg-dot" style="background:var(--green);"></div>L (LIBRE)</div>
+          <div class="cal-leg-item"><div class="cal-leg-dot" style="background:var(--amber);"></div>PMICA</div>
+          <div class="cal-leg-item"><div class="cal-leg-dot" style="background:var(--purple);"></div>LFN</div>
+          <div class="cal-leg-item"><div class="cal-leg-dot" style="background:var(--teal);"></div>VN (VACACIONES)</div>
+          <div class="cal-leg-item"><div class="cal-leg-dot" style="background:var(--coral);"></div>DEADLINE</div>
+          <div class="cal-leg-item"><div class="cal-leg-dot" style="background:#ff9de2;"></div>PERSONAL</div>
+        </div>
+        <div class="add-bar">
+          <input type="text" id="ev-titulo" placeholder="Evento: deporte, formación, reunión..."/>
+          <input type="date" id="ev-fecha"/>
+          <input type="time" id="ev-hora" placeholder="09:00"/>
+          <select id="ev-tipo">
+            <option value="personal">👤 Personal</option>
+            <option value="dronair">🚁 DronAIr</option>
+            <option value="sport">🏃 Deporte</option>
+            <option value="formacion">📚 Formación</option>
+            <option value="familia">👨‍👩‍👦 Familia</option>
+          </select>
+          <button class="add-btn" onclick="addEvento()">+ AÑADIR</button>
+        </div>
+        <div class="cal-nav">
+          <button class="cal-nav-btn" onclick="calPrev()">◄ ANTERIOR</button>
+          <span class="cal-month-title" id="cal-month-label"></span>
+          <button class="cal-nav-btn" onclick="calNext()">SIGUIENTE ►</button>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+      </div>
+    </div>
+
+    <!-- CONTACTOS -->
+    <div class="panel" id="panel-contactos">
+      <div class="card-section" style="margin-bottom:1.25rem;">
+        <div class="card-title">AÑADIR CONTACTO</div>
+        <div class="contact-form-grid">
+          <div class="cf"><label>NOMBRE</label><input type="text" id="cn-nombre" placeholder="Ej: Vicente Fernández"/></div>
+          <div class="cf"><label>ORGANIZACIÓN</label><input type="text" id="cn-org" placeholder="Ej: EDOS 2026"/></div>
+          <div class="cf"><label>CATEGORÍA</label><select id="cn-cat"><option value="institucional">Institucional</option><option value="consultora">Consultora IA</option><option value="formacion">Formación</option><option value="asociacion">Asociación</option><option value="proveedor">Proveedor</option></select></div>
+          <div class="cf"><label>EMAIL</label><input type="text" id="cn-mail" placeholder="correo@ejemplo.com"/></div>
+          <div class="cf"><label>TELÉFONO</label><input type="text" id="cn-tel" placeholder="+34 600 000 000"/></div>
+          <div class="cf"><label>LINKEDIN</label><input type="text" id="cn-linkedin" placeholder="linkedin.com/in/..."/></div>
+          <div class="cf" style="grid-column:1/-1"><label>NOTAS / ESTADO</label><textarea id="cn-notas" placeholder="Pendiente respuesta, contactado 06/05/2026..."></textarea></div>
+        </div>
+        <button class="add-btn" onclick="addContacto()">+ GUARDAR CONTACTO</button>
+      </div>
+      <div class="contact-filter-row">
+        <button class="f-btn active" onclick="setContactFilter('all',this)">TODOS</button>
+        <button class="f-btn" onclick="setContactFilter('institucional',this)">INSTITUCIONAL</button>
+        <button class="f-btn" onclick="setContactFilter('consultora',this)">CONSULTORAS IA</button>
+        <button class="f-btn" onclick="setContactFilter('formacion',this)">FORMACIÓN</button>
+        <button class="f-btn" onclick="setContactFilter('asociacion',this)">ASOCIACIONES</button>
+        <button class="f-btn" onclick="setContactFilter('proveedor',this)">PROVEEDORES</button>
+      </div>
+      <div class="contact-grid" id="contactos-grid"></div>
+    </div>
+
+    <!-- ECONOMÍA -->
+    <div class="panel" id="panel-economia">
+      <div class="card-section">
+        <div class="card-title">REGISTRAR MOVIMIENTO</div>
+        <div class="coste-form">
+          <div class="cf-field"><label>CONCEPTO</label><input type="text" id="c-nombre" placeholder="Ej: Licencia A1/A3"/></div>
+          <div class="cf-field"><label>IMPORTE (€)</label><input type="number" id="c-importe" placeholder="150" step="0.01"/></div>
+          <div class="cf-field"><label>TIPO</label><select id="c-tipo"><option value="gasto">Gasto</option><option value="ingreso">Ingreso</option></select></div>
+          <button class="btn-inline btn-blue" onclick="addCoste()" style="height:34px;align-self:end;">+ AÑADIR</button>
+        </div>
+      </div>
+      <div class="card-section">
+        <div class="card-title">HISTORIAL</div>
+        <div id="coste-list" class="coste-list"></div>
+        <div class="coste-total">
+          <span class="coste-total-lbl">BALANCE ACTUAL</span>
+          <span class="coste-total-val" id="coste-balance">0 €</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div class="footer">
+    <p>DRONAIR © 2026 · INNOVACIÓN Y DESARROLLO · TECNOLOGÍA AÉREA CON IA · v5.2 · ☁ FIREBASE SYNC · 17/05/2026</p>
+    <button class="reset-btn" onclick="resetAll()">REINICIAR TODO</button>
+  </div>
+</main>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// Firebase inicializado en script module separado
+
+// Exponer funciones Firebase al scope global
+window._fbSaveLog = async function(log) {
+  if (!db) return;
+  try {
+    await setDoc(doc(db, 'missioncontrol', 'leo_dronair_v5_log'), {
+      data: JSON.stringify(log), ts: Date.now()
+    });
+  } catch(e) { console.warn('Firebase log write error:', e); }
+};
+
+window._fbLoadAll = async function() {
+  if (!db) return {};
+  try {
+    const [logSnap, phasesSnap, contactosSnap, costesSnap] = await Promise.all([
+      getDoc(doc(db, 'missioncontrol', 'leo_dronair_v5_log')),
+      getDoc(doc(db, 'missioncontrol', 'leo_dronair_v5_phases')),
+      getDoc(doc(db, 'missioncontrol', 'leo_dronair_v5_contactos')),
+      getDoc(doc(db, 'missioncontrol', 'leo_dronair_v5_costes'))
+    ]);
+    return {
+      log: logSnap.exists() ? JSON.parse(logSnap.data().data || '[]') : null,
+      phases: phasesSnap.exists() ? JSON.parse(phasesSnap.data().data || '[]') : null,
+      contactos: contactosSnap.exists() ? JSON.parse(contactosSnap.data().data || '[]') : null,
+      costes: costesSnap.exists() ? JSON.parse(costesSnap.data().data || '[]') : null,
+    };
+  } catch(e) { console.warn('Firebase load error:', e); return {}; }
+};
+
+window._fbSavePhases = async function(data) {
+  if (!db) return;
+  try { await setDoc(doc(db, 'missioncontrol', 'leo_dronair_v5_phases'), {data: JSON.stringify(data), ts: Date.now()}); } catch(e) {}
+};
+
+window._fbSaveContactos = async function(data) {
+  if (!db) return;
+  try { await setDoc(doc(db, 'missioncontrol', 'leo_dronair_v5_contactos'), {data: JSON.stringify(data), ts: Date.now()}); } catch(e) {}
+};
+
+window._fbSaveCostes = async function(data) {
+  if (!db) return;
+  try { await setDoc(doc(db, 'missioncontrol', 'leo_dronair_v5_costes'), {data: JSON.stringify(data), ts: Date.now()}); } catch(e) {}
+};
+
+window.dispatchEvent(new Event('firebase-ready'));
+</script>
+<script>
+
+// ============ TURNOS ============
+const TURNOS={'2026-05-01':'N','2026-05-02':'N','2026-05-03':'N','2026-05-04':'L','2026-05-05':'L','2026-05-06':'L','2026-05-07':'L','2026-05-08':'PMICA','2026-05-09':'PMICA','2026-05-10':'PMICA','2026-05-11':'PMICA','2026-05-12':'PMICA','2026-05-14':'L','2026-05-15':'L','2026-05-16':'L','2026-05-17':'N','2026-05-18':'N','2026-05-19':'N','2026-05-20':'N','2026-05-21':'N','2026-05-22':'N','2026-05-23':'L','2026-05-24':'L','2026-05-25':'N','2026-05-26':'N','2026-05-27':'N','2026-05-28':'LFN','2026-05-29':'LFN','2026-05-30':'L','2026-05-31':'L','2026-06-01':'N','2026-06-02':'N','2026-06-03':'N','2026-06-04':'N','2026-06-05':'N','2026-06-06':'L','2026-06-07':'L','2026-06-08':'N','2026-06-09':'N','2026-06-10':'N','2026-06-11':'N','2026-06-12':'N','2026-06-13':'L','2026-06-14':'L','2026-06-15':'N','2026-06-16':'N','2026-06-17':'N','2026-06-18':'N','2026-06-19':'N','2026-06-20':'L','2026-06-21':'L','2026-06-22':'N','2026-06-23':'N','2026-06-24':'N','2026-06-25':'L','2026-06-26':'L','2026-06-27':'N','2026-06-28':'N','2026-06-29':'N','2026-06-30':'N','2026-07-01':'N','2026-07-02':'N','2026-07-03':'N','2026-07-04':'L','2026-07-05':'L','2026-07-06':'N','2026-07-07':'N','2026-07-08':'N','2026-07-09':'N','2026-07-10':'N','2026-07-11':'L','2026-07-12':'N','2026-07-13':'N','2026-07-14':'N','2026-07-15':'L','2026-07-16':'L','2026-07-17':'L','2026-07-18':'L','2026-07-19':'N','2026-07-20':'N','2026-07-21':'N','2026-07-22':'N','2026-07-23':'N','2026-07-24':'N','2026-07-25':'L','2026-07-26':'L','2026-07-27':'VN','2026-07-28':'VN','2026-07-29':'VN','2026-07-30':'VN','2026-07-31':'VN'};
+const TURN_CLS={'N':'ev-N','L':'ev-L','PMICA':'ev-PMICA','LFN':'ev-LFN','VN':'ev-VN'};
+const TURN_LABEL={'N':'🌙N','L':'✅LIBRE','PMICA':'🌅PMICA','LFN':'🟣LFN','VN':'🏖VN'};
+const TURN_FREE={'L':true,'LFN':true,'VN':true};
+
+// ============ DEFAULTS ============
+const DEFAULT_PHASES=[
+  {title:'FASE 1 — LICENCIAS Y BASE LEGAL',period:'MAYO–JULIO 2026',collapsed:false,tasks:[
+    {id:1,title:'Examen piloto A1/A3 AESA — ref. 2026/LPAE0/015702',tags:['urgente','gratis'],done:false,docs:[{name:'Solicitud matriculación A1/A3',expediente:'2026/LPAE0/015702',entidad:'AESA',fecha:'04/05/2026',vencimiento:'2026-06-07',notes:'Practicando en app — notas 90-95%. Límite 07/06/2026',fileData:null,fileName:''}]},
+    {id:2,title:'Confirmar número operador AESA activo',tags:['gratis'],done:true,docs:[]},
+    {id:4,title:'ROLECE — Notaría Riba-roja viernes 15/05 · Ctra. Vilamarxant 115 · Tel 962 77 92 77',tags:['urgente','gratis'],done:false,docs:[{name:'Carátulas ROLECE',expediente:'2026\\009613',entidad:'ROLECE',fecha:'07/05/2026',vencimiento:'2026-05-21',notes:'Llevar DNI original + carátula impresa. Pedir copia auténtica DNI firmada electrónicamente. Subir via "Anexar Documento Acreditativo"',fileData:null,fileName:''}]},
+    {id:3,title:'Asepeyo Doc. 8001-799732 — enviado firmado ✅',tags:['gratis'],done:true,docs:[{name:'Documento Asepeyo',expediente:'8001-799732',entidad:'Asepeyo',fecha:'',vencimiento:'',notes:'Enviar firmado a asepeyo@asepeyo.es',fileData:null,fileName:''}]},
+    {id:37,title:'AESA — Completar registro UAS operator en sede.seguridadaerea.gob.es/AESA_UAS',tags:['urgente','gratis'],done:false,docs:[]},
+    {id:45,title:'ROLECE subsanación ✅ 18/05 · Cert.AEAT + SS presentados',tags:['gratis'],done:true,deadline:'',driveLink:'',_linkOpen:false},
+    {id:5,title:'Alta Registro de Contratistas GVA',tags:['gratis'],done:false,docs:[]},
+    {id:6,title:'Activar email dronair@dron-air.es',tags:['gratis'],done:true,docs:[]},
+    {id:8,title:'IVACE PR-110633 — Subsanación carta intención ai2 UPV presentada el 12/05/2026',tags:['gratis'],done:true,docs:[{name:'Carta Intención ai2 UPV — Miguel Esparza',expediente:'IMINOD/2026/39',entidad:'IVACE / ai2 UPV',fecha:'12/05/2026',vencimiento:'',notes:'Firmada por Miguel Esparza Manzano (Gerente ai2 UPV). Presentada vía sede.gva.es. Justificante en Drive carpeta IVACE',fileData:null,fileName:''}]},
+    {id:35,title:'Certificado digital representante DronAIr',tags:['gratis'],done:false,docs:[]},
+    {id:9,title:'ROLECE solicitud online completada — Nº ROLECE2026E000032119',tags:['gratis'],done:true,docs:[]},
+  ]},
+  {title:'FASE 2 — FORMACIÓN Y VISIBILIDAD',period:'MAYO–JULIO 2026',collapsed:false,tasks:[
+    {id:38,title:'IES Serrà Perenxisa — Preinscripción IABD en AdmiNOVA (20-28 mayo)',tags:['urgente','formacion'],done:false,docs:[]},
+    {id:39,title:'Formación Digital PYMES Virensis/EOI — Aula Virtual · 14/05–19/06 · Hacer MOOC pronto',tags:['urgente','formacion'],done:false,docs:[{name:'Convocatoria Formación Digital PYMES',expediente:'AF1 Grupo 83',entidad:'Virensis / EOI',fecha:'13/05/2026',vencimiento:'2026-06-19',notes:'Login: ect.cursosvirensis.es · Usuario/pass = DNI minúscula. Zoom. Completar MOOC Generación Digital antes de fin de programa.',fileData:null,fileName:''}]},
+    {id:40,title:'Teledetección y GIS — hasta 21/05 (martes-jueves)',tags:['urgente','formacion'],done:false,docs:[]},
+    {id:10,title:'Activar LinkedIn DronAIr empresa + perfil personal bilingüe',tags:['gratis'],done:false,docs:[]},
+    {id:11,title:'Optimizar web dron-air.es con palabras clave SEO',tags:['gratis','comercial'],done:true,docs:[]},
+    {id:12,title:'Alta Google Business Profile',tags:['gratis','comercial'],done:false,docs:[]},
+    {id:13,title:'Mail enviado director IES La Marxadella',tags:['comercial','gratis'],done:true,docs:[{name:'Mail enviado — Director IES La Marxadella',expediente:'',entidad:'IES La Marxadella',fecha:'04/05/2026',vencimiento:'',notes:'Presentación DronAIr: difusión, contactos ayuntamientos, plaza IA Big Data',fileData:null,fileName:''}]},
+    {id:36,title:'AsDrón Spain — Contactado, derivado al área correspondiente',tags:['comercial'],done:false,docs:[{name:'Contacto AsDrón Spain',expediente:'',entidad:'AsDrón Spain',fecha:'04/05/2026',vencimiento:'',notes:'Respondieron: derivado al área correspondiente. Pendiente respuesta definitiva',fileData:null,fileName:''}]},
+    {id:41,title:'Juan Bru — Confirmar fecha primera llamada (juan_bru@hotmail.es)',tags:['comercial','gratis'],done:false,docs:[]},
+    {id:15,title:'IES Serrà Perenxisa — Matrícula presencial en centro (julio)',tags:['formacion'],done:false,docs:[]},
+    {id:16,title:'Localizar técnico Ayuntamiento Torrent',tags:['comercial','gratis'],done:false,docs:[]},
+    {id:17,title:'Preparar dossier de servicios DronAIr en PDF',tags:['gratis','comercial'],done:false,docs:[]},
+    {id:18,title:'Publicar artículo LinkedIn: drones en prevención DANA Valencia',tags:['comercial','gratis'],done:false,docs:[]},
+    {id:42,title:'Mission Control v4.3 — desplegar en GitHub con calendario y turnos Air Nostrum',tags:['gratis'],done:false,docs:[]},
+    {id:19,title:'Contactar EDOS 2026 — Vicente Fernández, Feria Valencia dic',tags:['comercial','gratis'],done:false,docs:[]},
+  ]},
+  {title:'FASE 3 — LICITACIONES Y OPERACIONES',period:'JUNIO–SEPTIEMBRE 2026',collapsed:false,tasks:[
+    {id:43,title:'Análisis y solicitud próximas ayudas y subvenciones (CDTI, Kit Digital, GVA, Horizon)',tags:['urgente','gratis'],done:false,docs:[]},
+    {id:20,title:'Activar alertas licitación PLACSP',tags:['urgente','gratis'],done:false,docs:[]},
+    {id:21,title:'Contratar seguro RC profesional UAS',tags:['coste'],done:false,docs:[]},
+    {id:22,title:'Presentar primera oferta a contrato menor ayuntamiento',tags:['comercial','gratis'],done:false,docs:[]},
+    {id:23,title:'Demostración operativa ante técnico municipal',tags:['comercial'],done:false,docs:[]},
+    {id:24,title:'Inicio curso IA y Big Data IES Serrà Perenxisa — octubre 2026',tags:['formacion'],done:false,docs:[]},
+    {id:25,title:'Publicar 2 posts/semana en LinkedIn',tags:['comercial','gratis'],done:false,docs:[]},
+    {id:26,title:'Resolución IVACE INNOVA-CV 2026 — IMINOD/2026/39',tags:['urgente','gratis'],done:false,docs:[]},
+    {id:27,title:'Iniciar roadmap licencia STS-02',tags:['formacion','coste'],done:false,docs:[]},
+  ]},
+  {title:'FASE 4 — DESPEGUE OPERACIONAL',period:'OCTUBRE 2026 → ENERO 2027',collapsed:false,tasks:[
+    {id:28,title:'Recepción financiación IVACE — adquisición equipamiento',tags:['coste'],done:false,docs:[]},
+    {id:29,title:'Primeros servicios piloto con cliente real',tags:['comercial'],done:false,docs:[]},
+    {id:30,title:'TFC IES Serrà Perenxisa: drones en enjambre con IA',tags:['formacion'],done:false,docs:[]},
+    {id:31,title:'Presentación DronAIr en EDOS 2026 — Feria Valencia 16-17 dic',tags:['comercial'],done:false,docs:[]},
+    {id:44,title:'Alianza estratégica drones+UGV con Juan Bru',tags:['comercial','gratis'],done:false,docs:[]},
+    {id:32,title:'Propuesta servicios 2027 para ayuntamientos valencianos',tags:['comercial','gratis'],done:false,docs:[]},
+    {id:33,title:'Análisis líneas financiación 2027',tags:['gratis'],done:false,docs:[]},
+    {id:34,title:'Primera factura emitida — DronAIr operativa',tags:['comercial'],done:false,docs:[]},
+  ]}
+];
+
+const DEFAULT_CONTACTOS=[
+  {id:100,nombre:'AsDrón Spain',org:'Asociación Nacional de Drones',cat:'asociacion',mail:'',tel:'',linkedin:'linkedin.com/company/asdron-spain',notas:'Respondieron 04/05/2026 — derivado al área correspondiente. Pendiente respuesta definitiva'},
+  {id:101,nombre:'IVACE — Programa Innova',org:'IVACE',cat:'institucional',mail:'',tel:'',linkedin:'',notas:'Expediente IMINOD/2026/39. Subsanación carta ai2 UPV presentada 12/05/2026. Justificante en Drive carpeta IVACE'},
+  {id:102,nombre:'Director IES La Marxadella',org:'IES La Marxadella',cat:'formacion',mail:'',tel:'',linkedin:'',notas:'Mail enviado 04/05/2026 — presentación DronAIr, solicitud difusión y plaza IA Big Data'},
+  {id:103,nombre:'BBVA DronAIr',org:'BBVA',cat:'proveedor',mail:'',tel:'',linkedin:'',notas:'Cuenta bancaria DronAIr abierta. Anexada a cuentas personales de Leo'},
+  {id:104,nombre:'AESA — Operador UAS',org:'AESA',cat:'institucional',mail:'',tel:'',linkedin:'',notas:'Número operador activo. Solicitud matrícula A1/A3: 2026/LPAE0/015702. Límite examen 07/06/2026'},
+  {id:105,nombre:'Ramón Blasco',org:'Instituto ai2 — UPV',cat:'consultora',mail:'rblasco@upv.es',tel:'',linkedin:'',notas:'Director Instituto ai2 UPV. Contacto facilitado por Mario Quesada (WEITEC). Miguel Esparza Manzano firmó carta intención 12/05/2026.'},
+  {id:106,nombre:'Jorge Luján',org:'Agencia IA Solutions',cat:'consultora',mail:'jorge@agenciaiasolutions.com',tel:'',linkedin:'',notas:'CEO Agencia IA Solutions. Email enviado 05/05/2026 — muy receptivo.'},
+  {id:107,nombre:'Miguel Esparza Manzano',org:'Instituto ai2 — UPV',cat:'consultora',mail:'gestor@ai2.upv.es',tel:'963 87 70 00',linkedin:'',notas:'Gerente ai2 UPV. Firmó carta intención DronAIr el 12/05/2026. Email de agradecimiento enviado. Relación estratégica clave.'},
+  {id:108,nombre:'Juan Bru',org:'Consultor independiente UGV',cat:'proveedor',mail:'juan_bru@hotmail.es',tel:'',linkedin:'',notas:'Consultor UGV (4 capas LLM: RA4M1/Pixhawk6 + RaspberryPi5). Primera llamada pendiente confirmar fecha. Potencial partner alianza drones+UGV.'},
+  {id:109,nombre:'Vicente Fernández',org:'EDOS 2026 — Feria Valencia',cat:'comercial',mail:'',tel:'',linkedin:'',notas:'Director comercial EDOS 2026. Evento 16-17 diciembre Feria Valencia. Reunión pendiente.'},
+  {id:110,nombre:'IES Serrà Perenxisa',org:'Conselleria Educació GVA',cat:'formacion',mail:'',tel:'',linkedin:'',notas:'Curso Especialización IA y Big Data (IABD). Preinscripción AdmiNOVA 20-28 mayo 2026. Matrícula presencial julio. CRÍTICO para turnos noche Air Nostrum 2027.'},
+];
+
+const DEFAULT_LOG=[
+  {fecha:'18/05/2026',text:'ROLECE subsanación COMPLETADA ✅ · Cert.Censal AEAT + Cert.corriente SS presentados · Nº ROLECE2026E000034951 y 34955',ts:Date.now()},
+  {fecha:'18/05/2026',text:'Mail admisión extraordinaria IES Serrà Perenxisa enviado ✅ · Argumentación Art.7 y Art.11.5 RD 279/2021',ts:Date.now()-1000},
+  {fecha:'17/05/2026',text:'Mission Control v5.2 operativo · ROLECE completado ✅ · Semana planificada: examen A1/A3 sáb 23 · AdmiNOVA mié 20 · Curso PYMES en curso · Eventos Dante: tutoría mar 19 + reunión maestra mié 20 12:50 · Firebase sincronización activa · turnos Airnostrum Mayo-Julio precargados.',ts:Date.now()},
+  {fecha:'12/05/2026',text:'IVACE subsanación enviada · carta intención ai2 UPV firmada por Miguel Esparza ✅',ts:1747094400000},
+  {fecha:'07/05/2026',text:'ROLECE registrado · Nº ROLECE2026E000032119 ✅',ts:1746662000000},
+];
+const DEFAULT_EVENTOS=[
+  {id:9001,titulo:'Fin Formación Digital PYMES',fecha:'2026-06-19',hora:'21:00',tipo:'formacion'},
+  {id:9002,titulo:'Inicio Teledetección GIS',fecha:'2026-06-16',hora:'',tipo:'formacion'},
+  {id:9003,titulo:'Fin Teledetección GIS',fecha:'2026-07-21',hora:'',tipo:'formacion'},
+  {id:9004,titulo:'Curso Ciberseguridad',fecha:'2026-06-09',hora:'',tipo:'formacion'},
+  {id:9005,titulo:'Tutoría orientadora Dante',fecha:'2026-05-19',hora:'',tipo:'familia'},
+  {id:9006,titulo:'Reunión maestra de Dante',fecha:'2026-05-20',hora:'12:50',tipo:'familia'},
+  {id:9007,titulo:'⚡ EXAMEN A1/A3 AESA',fecha:'2026-05-23',hora:'',tipo:'dronair'},
+  {id:9008,titulo:'AdmiNOVA — Preinscripción IES Serrà Perenxisa',fecha:'2026-05-20',hora:'',tipo:'formacion'},
+];
+
+// ============ STATE ============
+let phases=[],contactos=[],activityLog=[],costes=[],userEventos=[];
+let activeFilter='all',activeContactFilter='all',nextId=200;
+let calYear=2026,calMonth=4;
+let briefingTimer=null;
+
+// ============ FIREBASE SDK ============
+// Firebase inicializado en script module separado
+
+async function saveLogToFirebase(log) {
+  if (!db) return;
+  try {
+    await setDoc(doc(db, 'missioncontrol', 'leo_dronair_v5_log'), {
+      data: JSON.stringify(log),
+      ts: Date.now()
+    });
+  } catch(e) { console.warn('Firebase write error:', e); }
+}
+
+async function loadLogFromFirebase() {
+  if (!db) return null;
+  try {
+    const snap = await getDoc(doc(db, 'missioncontrol', 'leo_dronair_v5_log'));
+    if (snap.exists()) return JSON.parse(snap.data().data || '[]');
+  } catch(e) { console.warn('Firebase read error:', e); }
+  return null;
+}
+
+async function savePhasesToFirebase(data) {
+  if (!db) return;
+  try {
+    await setDoc(doc(db, 'missioncontrol', 'leo_dronair_v5_phases'), {
+      data: JSON.stringify(data), ts: Date.now()
+    });
+  } catch(e) { console.warn('Firebase phases write error:', e); }
+}
+
+async function loadPhasesFromFirebase() {
+  if (!db) return null;
+  try {
+    const snap = await getDoc(doc(db, 'missioncontrol', 'leo_dronair_v5_phases'));
+    if (snap.exists()) return JSON.parse(snap.data().data || '[]');
+  } catch(e) { console.warn('Firebase phases read error:', e); }
+  return null;
+}
+
+async function saveContactosToFirebase(data) {
+  if (!db) return;
+  try {
+    await setDoc(doc(db, 'missioncontrol', 'leo_dronair_v5_contactos'), {
+      data: JSON.stringify(data), ts: Date.now()
+    });
+  } catch(e) {}
+}
+
+async function loadContactosFromFirebase() {
+  if (!db) return null;
+  try {
+    const snap = await getDoc(doc(db, 'missioncontrol', 'leo_dronair_v5_contactos'));
+    if (snap.exists()) return JSON.parse(snap.data().data || '[]');
+  } catch(e) {}
+  return null;
+}
+
+async function saveCostesToFirebase(data) {
+  if (!db) return;
+  try {
+    await setDoc(doc(db, 'missioncontrol', 'leo_dronair_v5_costes'), {
+      data: JSON.stringify(data), ts: Date.now()
+    });
+  } catch(e) {}
+}
+
+async function loadCostesFromFirebase() {
+  if (!db) return null;
+  try {
+    const snap = await getDoc(doc(db, 'missioncontrol', 'leo_dronair_v5_costes'));
+    if (snap.exists()) return JSON.parse(snap.data().data || '[]');
+  } catch(e) {}
+  return null;
+}
+
+// ============ SYNC — localStorage + Firebase ============
+function setSyncBadge(state){
+  const b=document.getElementById('sync-badge');
+  if(!b)return;
+  if(state==='ok'){b.textContent='✓ FIREBASE SYNC';b.className='sync-indicator sync-ok';}
+  if(state==='saving'){b.textContent='⟳ SINCRONIZANDO...';b.className='sync-indicator sync-saving';}
+  if(state==='err'){b.textContent='⚠ SOLO LOCAL';b.className='sync-indicator sync-err';}
+}
+
+function loadFromLocal(){
+  try{const s=localStorage.getItem('dronair_v5_phases');if(s)phases=JSON.parse(s);else phases=JSON.parse(JSON.stringify(DEFAULT_PHASES));}catch(e){phases=JSON.parse(JSON.stringify(DEFAULT_PHASES));}
+  try{const s=localStorage.getItem('dronair_v5_contactos');if(s)contactos=JSON.parse(s);else contactos=JSON.parse(JSON.stringify(DEFAULT_CONTACTOS));}catch(e){contactos=JSON.parse(JSON.stringify(DEFAULT_CONTACTOS));}
+  try{const s=localStorage.getItem('dronair_v5_log');if(s)activityLog=JSON.parse(s);else activityLog=DEFAULT_LOG.slice();}catch(e){activityLog=DEFAULT_LOG.slice();}
+  try{const s=localStorage.getItem('dronair_v5_costes');if(s)costes=JSON.parse(s);else costes=[];}catch(e){costes=[];}
+  try{const s=localStorage.getItem('dronair_v5_eventos');if(s)userEventos=JSON.parse(s);else userEventos=JSON.parse(JSON.stringify(DEFAULT_EVENTOS));}catch(e){userEventos=JSON.parse(JSON.stringify(DEFAULT_EVENTOS));}
+  const brief=localStorage.getItem('dronair_v5_briefing')||'';
+  const el=document.getElementById('briefing-text');if(el)el.value=brief;
+}
+
+function saveToLocal(){
+  try{localStorage.setItem('dronair_v5_phases',JSON.stringify(phases));}catch(e){}
+  try{localStorage.setItem('dronair_v5_contactos',JSON.stringify(contactos));}catch(e){}
+  try{localStorage.setItem('dronair_v5_log',JSON.stringify(activityLog));}catch(e){}
+  try{localStorage.setItem('dronair_v5_costes',JSON.stringify(costes));}catch(e){}
+  try{localStorage.setItem('dronair_v5_eventos',JSON.stringify(userEventos));}catch(e){}
+}
+
+function save(){saveToLocal();window._fbSavePhases && window._fbSavePhases(phases);}
+function saveContactos(){saveToLocal();window._fbSaveContactos && window._fbSaveContactos(contactos);}
+function saveLog(){saveToLocal();}
+function saveCoste(){saveToLocal();window._fbSaveCostes && window._fbSaveCostes(costes);}
+function saveEventos(){saveToLocal();}
+
+// ============ BRIEFING ============
+function saveBriefing(){
+  clearTimeout(briefingTimer);
+  const saved=document.getElementById('briefing-saved');
+  if(saved){saved.textContent='// Guardando...';saved.classList.remove('ok');}
+  briefingTimer=setTimeout(()=>{
+    const t=document.getElementById('briefing-text')?.value||'';
+    localStorage.setItem('dronair_v5_briefing',t);
+    if(saved){saved.textContent='✓ GUARDADO EN LA NUBE';saved.classList.add('ok');setTimeout(()=>{saved.textContent='// Auto-guardado activo';saved.classList.remove('ok');},2500);}
+  },800);
+}
+function getBriefing(){return document.getElementById('briefing-text')?.value||localStorage.getItem('dronair_v5_briefing')||'';}
+
+// ============ LOG ============
+function addLog(){
+  const inp=document.getElementById('log-input');const text=inp.value.trim();if(!text)return;
+  const fecha=new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric'});
+  activityLog.unshift({fecha,text,ts:Date.now()});
+  if(activityLog.length>60)activityLog=activityLog.slice(0,60);
+  inp.value='';saveLog();renderLog();
+  setSyncBadge('saving');
+  window._fbSaveLog && window._fbSaveLog(activityLog).then(()=>setSyncBadge('ok')).catch(()=>setSyncBadge('err'));
+}
+function clearLog(){if(confirm('¿Limpiar todo el log?')){activityLog=[];saveLog();renderLog();window._fbSaveLog && window._fbSaveLog([]);}}
+function renderLog(){
+  const el=document.getElementById('log-entries');if(!el)return;
+  if(!activityLog.length){el.innerHTML='<div class="log-empty">// Sin entradas aún</div>';return;}
+  el.innerHTML=activityLog.map(e=>`<div class="log-entry"><span class="log-entry-date">${e.fecha}</span> · <span>${e.text}</span></div>`).join('');
+}
+
+// ============ STATS ============
+function allTasks(){return phases.flatMap(p=>p.tasks);}
+function todayISO(){return new Date().toISOString().slice(0,10);}
+function daysUntil(d){if(!d)return 999;return Math.round((new Date(d+' 12:00')-new Date())/(1000*60*60*24));}
+function updateStats(){
+  const a=allTasks(),total=a.length,done=a.filter(t=>t.done).length;
+  const urgent=a.filter(t=>!t.done&&t.tags.includes('urgente')).length;
+  const near=a.filter(t=>!t.done&&t.deadline&&daysUntil(t.deadline)<=7&&daysUntil(t.deadline)>=0).length;
+  const pct=total?Math.round((done/total)*100):0;
+  document.getElementById('s-total').textContent=total;
+  document.getElementById('s-done').textContent=done;
+  document.getElementById('s-urgent').textContent=urgent;
+  document.getElementById('s-near').textContent=near;
+  document.getElementById('g-bar').style.width=pct+'%';
+  document.getElementById('g-pct-txt').textContent=pct+'%';
+  const gastos=costes.filter(c=>c.tipo==='gasto').reduce((s,c)=>s+c.importe,0);
+  const ingresos=costes.filter(c=>c.tipo==='ingreso').reduce((s,c)=>s+c.importe,0);
+  document.getElementById('s-gasto').textContent=Math.round(gastos)+'€';
+  document.getElementById('s-ingreso').textContent=Math.round(ingresos)+'€';
+}
+
+// ============ SEMANA ============
+function renderSemana(){renderWeekDays();renderNearTasks();}
+function renderWeekDays(){
+  const grid=document.getElementById('week-days-grid');if(!grid)return;
+  const today=new Date();const dow=today.getDay();
+  const monday=new Date(today);monday.setDate(today.getDate()-(dow===0?6:dow-1));
+  const DAYS=['LUN','MAR','MIÉ','JUE','VIE','SÁB','DOM'];
+  let html='';
+  for(let i=0;i<7;i++){
+    const d=new Date(monday);d.setDate(monday.getDate()+i);
+    const iso=d.toISOString().slice(0,10);
+    const turno=TURNOS[iso]||'';const isToday=iso===todayISO();const isLibre=TURN_FREE[turno];
+    const deadlines=allTasks().filter(t=>!t.done&&t.deadline===iso);
+    const evs=userEventos.filter(e=>e.fecha===iso);
+    html+=`<div class="week-day${isToday?' today-col':''}${isLibre?' libre':''}">
+      <div class="week-day-name">${DAYS[i]}</div>
+      <div class="week-day-num">${d.getDate()}</div>
+      ${turno?`<div class="week-turn ${TURN_CLS[turno]||''}">${TURN_LABEL[turno]||turno}</div>`:''}
+      ${isLibre?`<div class="week-libre-badge">LIBRE</div>`:''}
+      ${deadlines.map(t=>`<div style="font-size:6px;color:var(--coral);font-family:'Share Tech Mono',monospace;margin-top:2px;">⚡${t.title.substring(0,15)}</div>`).join('')}
+      ${evs.map(e=>`<div style="font-size:6px;color:#ff9de2;font-family:'Share Tech Mono',monospace;margin-top:1px;">•${e.titulo.substring(0,15)}</div>`).join('')}
+    </div>`;
+  }
+  grid.innerHTML=html;
+}
+function renderNearTasks(){
+  const el=document.getElementById('near-tasks-list');if(!el)return;
+  const near=allTasks().filter(t=>!t.done&&t.deadline&&daysUntil(t.deadline)<=14&&daysUntil(t.deadline)>=0).sort((a,b)=>a.deadline.localeCompare(b.deadline));
+  if(!near.length){el.innerHTML='<div style="font-family:\'Share Tech Mono\',monospace;font-size:10px;color:var(--text3);padding:1rem;letter-spacing:0.1em;">// SIN DEADLINES EN LOS PRÓXIMOS 14 DÍAS</div>';return;}
+  el.innerHTML=near.map(t=>{
+    const days=daysUntil(t.deadline);const cls=days<=3?'near':days<=7?'soon':'';
+    const pi=phases.findIndex(p=>p.tasks.some(tk=>tk.id===t.id));
+    const ri=pi>=0?phases[pi].tasks.findIndex(tk=>tk.id===t.id):-1;
+    return`<div class="task" style="margin-bottom:4px;"><div class="task-main" onclick="toggleTask(${pi},${ri})">
+      <div class="task-chk${t.done?' done':''}"><div class="chk-dot"></div></div>
+      <div class="task-body"><div class="task-title">${t.title}</div>
+      <div class="task-meta">${t.tags.map(tag=>`<span class="tag tag-${tag}">${tagLabel(tag)}</span>`).join('')}<span class="task-deadline ${cls}">📅 ${t.deadline} · en ${days}d</span></div></div></div></div>`;
+  }).join('');
+}
+
+// ============ TASKS ============
+const PHASE_COLORS=['#1560FF','#1fcb8a','#f0a830','#8a7aee'];
+function tagLabel(t){return{urgente:'URGENTE',coste:'COSTE',gratis:'SIN COSTE',formacion:'FORMACIÓN',comercial:'COMERCIAL'}[t]||t;}
+function renderTareas(){
+  const c=document.getElementById('phases-container');if(!c)return;c.innerHTML='';
+  phases.forEach((ph,pi)=>{
+    let visible=ph.tasks.filter(t=>{
+      if(activeFilter==='all')return true;if(activeFilter==='pendiente')return !t.done;
+      return t.tags.includes(activeFilter);
+    });
+    if(!visible.length&&activeFilter!=='all'&&activeFilter!=='pendiente')return;
+    const done=visible.filter(t=>t.done).length;const pct=visible.length?Math.round((done/visible.length)*100):0;const col=PHASE_COLORS[pi];
+    const div=document.createElement('div');div.className='phase'+(ph.collapsed?' collapsed':'');div.id='phase-'+pi;
+    const tasksHtml=visible.map(task=>{
+      const ri=ph.tasks.indexOf(task);const days=task.deadline?daysUntil(task.deadline):999;
+      const dlCls=days<=3?'near':days<=7?'soon':'';
+      return`<div class="task${task.done?' done':''}">
+        <div class="task-main" onclick="toggleTask(${pi},${ri})">
+          <div class="task-chk"><div class="chk-dot"></div></div>
+          <div class="task-body"><div class="task-title">${task.title}</div>
+          <div class="task-meta">${task.tags.map(t=>`<span class="tag tag-${t}">${tagLabel(t)}</span>`).join('')}${task.deadline?`<span class="task-deadline ${dlCls}">📅 ${task.deadline}${days<999?' · '+days+'d':''}</span>`:''}</div></div>
+          <div class="task-actions">
+            <button class="task-link-btn${task.driveLink?' has-link':''}" onclick="event.stopPropagation();toggleLinkEdit(${pi},${ri})">${task.driveLink?'🔗':'+ LINK'}</button>
+            <button class="task-del" onclick="event.stopPropagation();delTask(${pi},${ri})">✕</button>
+          </div>
+        </div>
+        <div class="link-edit${task._linkOpen?' open':''}" id="link-${pi}-${ri}">
+          <div class="link-edit-label">LINK DRIVE / URL DOCUMENTO</div>
+          <input type="text" value="${task.driveLink||''}" placeholder="https://drive.google.com/..." onchange="saveLink(${pi},${ri},this.value)"/>
+        </div>
+      </div>`;
+    }).join('');
+    div.innerHTML=`<div class="phase-head" onclick="togglePhase(${pi})"><div class="phase-line" style="background:${col}"></div><div class="phase-info"><h2 style="color:${col}">${ph.title}</h2><p>${ph.period}</p></div><span class="phase-pct" style="color:${col}">${pct}%</span><span class="phase-ct">${done}/${visible.length}</span><span class="phase-chev">▾</span></div><div class="prog-mini"><div class="prog-mini-fill" style="width:${pct}%;background:${col}"></div></div><div class="tasks-wrap">${tasksHtml}</div>`;
+    c.appendChild(div);
+  });
+  updateStats();
+}
+function toggleTask(pi,ti){if(pi<0||ti<0)return;phases[pi].tasks[ti].done=!phases[pi].tasks[ti].done;save();renderTareas();renderSemana();}
+function togglePhase(pi){phases[pi].collapsed=!phases[pi].collapsed;save();renderTareas();}
+function delTask(pi,ti){if(confirm('¿Eliminar tarea?')){phases[pi].tasks.splice(ti,1);save();renderTareas();renderSemana();}}
+function setFilter(f,btn){activeFilter=f;document.querySelectorAll('.tasks-toolbar .f-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderTareas();}
+function toggleLinkEdit(pi,ri){const el=document.getElementById(`link-${pi}-${ri}`);if(!el)return;phases[pi].tasks[ri]._linkOpen=!el.classList.contains('open');el.classList.toggle('open');}
+function saveLink(pi,ri,val){phases[pi].tasks[ri].driveLink=val;save();}
+function addTask(){
+  const inp=document.getElementById('new-input');const pi=parseInt(document.getElementById('new-phase').value);
+  const tag=document.getElementById('new-tag').value;const deadline=document.getElementById('new-date').value||'';
+  const title=inp.value.trim();if(!title)return;
+  phases[pi].tasks.push({id:nextId++,title,tags:[tag],done:false,deadline,driveLink:'',_linkOpen:false});
+  inp.value='';save();renderTareas();renderSemana();
+}
+
+// ============ CALENDAR ============
+const MONTHS_ES=['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+const DOWS=['LUN','MAR','MIÉ','JUE','VIE','SÁB','DOM'];
+function calPrev(){calMonth--;if(calMonth<0){calMonth=11;calYear--;}renderCal();}
+function calNext(){calMonth++;if(calMonth>11){calMonth=0;calYear++;}renderCal();}
+function addEvento(){
+  const titulo=document.getElementById('ev-titulo').value.trim();const fecha=document.getElementById('ev-fecha').value;
+  const hora=document.getElementById('ev-hora').value;const tipo=document.getElementById('ev-tipo').value;
+  if(!titulo||!fecha){alert('Indica título y fecha');return;}
+  userEventos.push({id:Date.now(),titulo,fecha,hora,tipo});saveEventos();
+  document.getElementById('ev-titulo').value='';
+  activityLog.unshift({fecha:new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric'}),text:`📅 Evento añadido: ${titulo} · ${fecha}${hora?' a las '+hora:''}`,ts:Date.now()});
+  saveLog();renderLog();renderCal();renderSemana();
+}
+function delEvento(id){userEventos=userEventos.filter(e=>e.id!==id);saveEventos();renderCal();renderSemana();}
+function renderCal(){
+  const grid=document.getElementById('cal-grid');const label=document.getElementById('cal-month-label');if(!grid||!label)return;
+  label.textContent=MONTHS_ES[calMonth]+' '+calYear;
+  let html=DOWS.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  const firstDay=new Date(calYear,calMonth,1);let startDow=firstDay.getDay();startDow=(startDow===0)?6:startDow-1;
+  const daysInMonth=new Date(calYear,calMonth+1,0).getDate();const daysInPrev=new Date(calYear,calMonth,0).getDate();
+  const today=new Date();const ty=today.getFullYear(),tm=today.getMonth(),td=today.getDate();const evMonth=calMonth+1;
+  const evMap={};
+  Object.entries(TURNOS).forEach(([iso,t])=>{const d=new Date(iso+' 12:00');if(d.getFullYear()===calYear&&(d.getMonth()+1)===evMonth){const day=d.getDate();if(!evMap[day])evMap[day]=[];evMap[day].unshift({label:TURN_LABEL[t]||t,cls:TURN_CLS[t]||'ev-N',id:null});}});
+  userEventos.forEach(ev=>{const d=new Date(ev.fecha+' 12:00');if(d.getFullYear()===calYear&&(d.getMonth()+1)===evMonth){const day=d.getDate();if(!evMap[day])evMap[day]=[];const icons={personal:'👤',dronair:'🚁',sport:'🏃',formacion:'📚',familia:'👨‍👩‍👦'};evMap[day].push({label:`${icons[ev.tipo]||''}${ev.hora?' '+ev.hora:''}${ev.titulo.substring(0,16)}`,cls:ev.tipo==='sport'?'ev-sport':ev.tipo==='formacion'?'ev-formacion':'ev-personal',id:ev.id});}});
+  allTasks().filter(t=>!t.done&&t.deadline).forEach(t=>{const d=new Date(t.deadline+' 12:00');if(d.getFullYear()===calYear&&(d.getMonth()+1)===evMonth){const day=d.getDate();if(!evMap[day])evMap[day]=[];evMap[day].push({label:`⚡${t.title.substring(0,18)}`,cls:'ev-deadline',id:null});}});
+  for(let i=0;i<startDow;i++){const d=daysInPrev-startDow+1+i;html+=`<div class="cal-cell other-month"><div class="cal-day-num">${d}</div></div>`;}
+  for(let d=1;d<=daysInMonth;d++){
+    const isToday=(calYear===ty&&calMonth===tm&&d===td);const evs=evMap[d]||[];const hasEv=evs.length>0;
+    const evsHtml=evs.map(ev=>{const del=ev.id!==null?`<button class="cal-ev-del" onclick="event.stopPropagation();delEvento(${ev.id})">✕</button>`:'';return`<div class="cal-event ${ev.cls}">${del}${ev.label}</div>`;}).join('');
+    html+=`<div class="cal-cell${isToday?' today':''}${hasEv?' has-event':''}"><div class="cal-day-num">${d}</div>${evsHtml}</div>`;
+  }
+  const total=startDow+daysInMonth;const remainder=(7-total%7)%7;
+  for(let i=1;i<=remainder;i++)html+=`<div class="cal-cell other-month"><div class="cal-day-num">${i}</div></div>`;
+  grid.innerHTML=html;
+}
+
+// ============ CONTACTS ============
+function addContacto(){
+  const nombre=document.getElementById('cn-nombre').value.trim();if(!nombre){alert('Indica el nombre');return;}
+  const org=document.getElementById('cn-org').value.trim();const cat=document.getElementById('cn-cat').value;
+  const mail=document.getElementById('cn-mail').value.trim();const tel=document.getElementById('cn-tel').value.trim();
+  const linkedin=document.getElementById('cn-linkedin').value.trim();const notas=document.getElementById('cn-notas').value.trim();
+  contactos.push({id:nextId++,nombre,org,cat,mail,tel,linkedin,notas});
+  ['cn-nombre','cn-org','cn-mail','cn-tel','cn-linkedin','cn-notas'].forEach(id=>{document.getElementById(id).value='';});
+  saveContactos();renderContactos();
+}
+function delContacto(id){if(confirm('¿Eliminar contacto?')){contactos=contactos.filter(c=>c.id!==id);saveContactos();renderContactos();}}
+function setContactFilter(f,btn){activeContactFilter=f;document.querySelectorAll('.contact-filter-row .f-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderContactos();}
+function initials(n){return n.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();}
+function renderContactos(){
+  const grid=document.getElementById('contactos-grid');if(!grid)return;
+  const list=activeContactFilter==='all'?contactos:contactos.filter(c=>c.cat===activeContactFilter);
+  if(!list.length){grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:2rem;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text3);">// SIN CONTACTOS EN ESTA CATEGORÍA</div>`;return;}
+  grid.innerHTML=list.map(c=>`<div class="contact-card"><div class="contact-head"><div class="contact-avatar">${initials(c.nombre)}</div><div><div class="contact-name">${c.nombre}</div>${c.org?`<div class="contact-org">${c.org}</div>`:''}<span class="contact-cat cat-${c.cat}">${c.cat.toUpperCase()}</span></div></div><div class="contact-fields">${c.mail?`<div class="contact-field"><span class="contact-field-icon">@</span><a href="mailto:${c.mail}">${c.mail}</a></div>`:''} ${c.tel?`<div class="contact-field"><span class="contact-field-icon">☎</span>${c.tel}</div>`:''} ${c.linkedin?`<div class="contact-field"><span class="contact-field-icon">in</span><a href="https://${c.linkedin.replace('https://','')}" target="_blank">${c.linkedin}</a></div>`:''} ${c.notas?`<div class="contact-notes">${c.notas}</div>`:''}</div><div class="contact-actions"><button class="contact-del" onclick="delContacto(${c.id})">✕ ELIMINAR</button></div></div>`).join('');
+}
+
+// ============ ECONOMY ============
+function addCoste(){
+  const nombre=document.getElementById('c-nombre').value.trim();const importe=parseFloat(document.getElementById('c-importe').value);const tipo=document.getElementById('c-tipo').value;
+  if(!nombre||isNaN(importe)||importe<=0)return;
+  costes.push({id:nextId++,nombre,importe,tipo,fecha:new Date().toISOString().slice(0,10)});
+  document.getElementById('c-nombre').value='';document.getElementById('c-importe').value='';
+  saveCoste();renderEconomia();updateStats();
+}
+function delCoste(id){costes=costes.filter(c=>c.id!==id);saveCoste();renderEconomia();updateStats();}
+function renderEconomia(){
+  const list=document.getElementById('coste-list');if(!list)return;
+  if(!costes.length){list.innerHTML=`<div style="text-align:center;padding:2rem;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text3);">// SIN MOVIMIENTOS</div>`;}
+  else list.innerHTML=costes.slice().reverse().map(c=>`<div class="coste-item"><div class="coste-item-name">${c.nombre}</div><div class="coste-item-date">${c.fecha}</div><div class="coste-item-amount ${c.tipo==='gasto'?'neg':'pos'}">${c.tipo==='gasto'?'-':'+'}${c.importe.toFixed(2)}€</div><button class="coste-item-del" onclick="delCoste(${c.id})">✕</button></div>`).join('');
+  const gastos=costes.filter(c=>c.tipo==='gasto').reduce((s,c)=>s+c.importe,0);const ingresos=costes.filter(c=>c.tipo==='ingreso').reduce((s,c)=>s+c.importe,0);const balance=ingresos-gastos;
+  const bal=document.getElementById('coste-balance');bal.textContent=(balance>=0?'+':'')+balance.toFixed(2)+' €';bal.style.color=balance>=0?'var(--green)':'var(--coral)';
+}
+
+// ============ PANELS ============
+function showPanel(name,btn){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');btn.classList.add('active');
+  if(name==='contactos')renderContactos();if(name==='economia')renderEconomia();if(name==='calendario')renderCal();if(name==='semana')renderSemana();
+}
+
+// ============ EXPORT ============
+function openExport(){
+  const a=allTasks(),total=a.length,done=a.filter(t=>t.done).length;const pct=total?Math.round((done/total)*100):0;
+  const today=todayISO();const fecha=new Date().toLocaleDateString('es-ES');const turnoHoy=TURNOS[today]||'SIN TURNO';
+  let txt=`// DRONAIR MISSION CONTROL · BRIEFING PARA CLAUDE\n// FECHA: ${fecha} · TURNO HOY: ${turnoHoy}\n// ${'─'.repeat(50)}\n\n`;
+  const briefing=getBriefing().trim();
+  if(briefing){txt+=`┌${'─'.repeat(50)}┐\n│ BRIEFING DE HOY · LEE ESTO PRIMERO │\n└${'─'.repeat(50)}┘\n${briefing}\n\n${'─'.repeat(52)}\n\n`;}
+  if(activityLog.length){txt+=`LOG DE ACTIVIDAD:\n`;activityLog.slice(0,6).forEach(e=>txt+=`  ${e.fecha} · ${e.text}\n`);txt+='\n';}
+  txt+=`PROGRESO GLOBAL: ${done}/${total} tareas (${pct}%)\n\n`;
+  phases.forEach(ph=>{
+    const pd=ph.tasks.filter(t=>t.done).length;const pp=ph.tasks.length?Math.round((pd/ph.tasks.length)*100):0;
+    txt+=`${ph.title} · ${pp}% (${pd}/${ph.tasks.length})\n`;
+    ph.tasks.filter(t=>t.done).forEach(t=>txt+=`  ✓ ${t.title}\n`);
+    ph.tasks.filter(t=>!t.done&&t.tags.includes('urgente')).forEach(t=>txt+=`  ⚡ URGENTE: ${t.title}${t.deadline?' · '+t.deadline:''}\n`);
+    ph.tasks.filter(t=>!t.done&&!t.tags.includes('urgente')).forEach(t=>txt+=`  ◦ ${t.title}${t.deadline?' · '+t.deadline:''}\n`);
+    txt+='\n';
+  });
+  const nearDl=a.filter(t=>!t.done&&t.deadline&&daysUntil(t.deadline)<=14).sort((a,b)=>a.deadline.localeCompare(b.deadline));
+  if(nearDl.length){txt+=`DEADLINES PRÓXIMOS:\n`;nearDl.forEach(t=>txt+=`  📅 ${t.deadline} · en ${daysUntil(t.deadline)}d · ${t.title}\n`);txt+='\n';}
+  txt+=`TURNOS PRÓXIMOS 7 DÍAS:\n`;
+  for(let i=0;i<7;i++){const d=new Date();d.setDate(d.getDate()+i);const iso=d.toISOString().slice(0,10);const t=TURNOS[iso]||'·';txt+=`  ${iso} · ${t}${TURN_FREE[t]?' ← LIBRE':''}\n`;}
+  txt+='\n';
+  if(contactos.length){txt+=`CONTACTOS CLAVE (${contactos.length}):\n`;contactos.slice(0,8).forEach(c=>txt+=`  · ${c.nombre}${c.org?' · '+c.org:''}${c.mail?' | '+c.mail:''}${c.tel?' | '+c.tel:''}${c.notas?' | '+c.notas.substring(0,60):''}\n`);txt+='\n';}
+  const gastos=costes.filter(c=>c.tipo==='gasto').reduce((s,c)=>s+c.importe,0);const ingresos=costes.filter(c=>c.tipo==='ingreso').reduce((s,c)=>s+c.importe,0);
+  txt+=`ECONOMÍA:\n  Gastos: ${gastos.toFixed(2)}€ · Ingresos: ${ingresos.toFixed(2)}€ · Balance: ${(ingresos-gastos).toFixed(2)}€\n\n`;
+  txt+=`DRIVE DRONAIR: https://drive.google.com/drive/folders/1BS8m7-sMmx7TjwFy3ENxzr2VRirSkOAG\n`;
+  document.getElementById('export-text').value=txt;document.getElementById('modal-export').classList.add('open');
+}
+function copyExport(){const ta=document.getElementById('export-text');ta.select();document.execCommand('copy');const btn=event.target;const orig=btn.textContent;btn.textContent='✓ COPIADO';setTimeout(()=>btn.textContent=orig,2000);}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function resetAll(){if(confirm('¿Reiniciar todo?')){phases=JSON.parse(JSON.stringify(DEFAULT_PHASES));costes=[];nextId=200;save();saveCoste();renderAll();}}
+
+// ============ RENDER ALL ============
+function renderAll(){
+  renderTareas();renderContactos();renderEconomia();renderCal();renderLog();updateStats();renderSemana();
+  document.getElementById('head-date').textContent=new Date().toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).toUpperCase();
+}
+
+// INIT
+document.addEventListener('DOMContentLoaded', ()=>{
+  // Limpiar caché local para forzar lectura desde Firebase
+  localStorage.removeItem('dronair_v5_phases');
+  localStorage.removeItem('dronair_v5_log');
+  localStorage.removeItem('dronair_v5_contactos');
+  localStorage.removeItem('dronair_v5_costes');
+  loadFromLocal();
+  renderAll();
+  setSyncBadge('saving');
+  
+  // Esperar Firebase y cargar datos
+  async function loadFromFirebase() {
+    if (!window._fbLoadAll) return;
+    const data = await window._fbLoadAll();
+    let changed = false;
+    if (data.log && data.log.length > 0) { activityLog = data.log; localStorage.setItem('dronair_v5_log', JSON.stringify(activityLog)); changed = true; }
+    if (data.phases && data.phases.length > 0) { phases = data.phases; localStorage.setItem('dronair_v5_phases', JSON.stringify(phases)); changed = true; }
+    if (data.contactos && data.contactos.length > 0) { contactos = data.contactos; localStorage.setItem('dronair_v5_contactos', JSON.stringify(contactos)); changed = true; }
+    if (data.costes && data.costes.length > 0) { costes = data.costes; localStorage.setItem('dronair_v5_costes', JSON.stringify(costes)); changed = true; }
+    if (changed) renderAll();
+    setSyncBadge('ok');
+  }
+  
+  window.addEventListener('firebase-ready', loadFromFirebase);
+  setTimeout(loadFromFirebase, 2000); // fallback por si el evento ya paso
+});
+</script>
+</body>
+</html>
