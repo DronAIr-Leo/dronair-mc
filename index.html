@@ -491,7 +491,7 @@ body::before{content:'';position:fixed;left:0;right:0;height:1px;background:line
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-// Firebase inicializado en script module separado
+const firebaseConfig = {   apiKey: "AIzaSyCaoPqop5zMAU0wN5eTSsHSgpd3zJkAUZI",   authDomain: "dronair-mc.firebaseapp.com",   projectId: "dronair-mc",   storageBucket: "dronair-mc.firebasestorage.app",   messagingSenderId: "661234543730",   appId: "1:661234543730:web:b459875bdadf9f7a6726eb" }; const app = initializeApp(firebaseConfig); const db = getFirestore(app); window._db = db;
 
 // Exponer funciones Firebase al scope global
 window._fbSaveLog = async function(log) {
@@ -640,7 +640,7 @@ let calYear=2026,calMonth=4;
 let briefingTimer=null;
 
 // ============ FIREBASE SDK ============
-// Firebase inicializado en script module separado
+const firebaseConfig = {   apiKey: "AIzaSyCaoPqop5zMAU0wN5eTSsHSgpd3zJkAUZI",   authDomain: "dronair-mc.firebaseapp.com",   projectId: "dronair-mc",   storageBucket: "dronair-mc.firebasestorage.app",   messagingSenderId: "661234543730",   appId: "1:661234543730:web:b459875bdadf9f7a6726eb" }; const app = initializeApp(firebaseConfig); const db = getFirestore(app); window._db = db;
 
 async function saveLogToFirebase(log) {
   if (!db) return;
