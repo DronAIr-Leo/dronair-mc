@@ -639,81 +639,9 @@ let activeFilter='all',activeContactFilter='all',nextId=200;
 let calYear=2026,calMonth=4;
 let briefingTimer=null;
 
-// ============ FIREBASE SDK ============
-const firebaseConfig = {   apiKey: "AIzaSyCaoPqop5zMAU0wN5eTSsHSgpd3zJkAUZI",   authDomain: "dronair-mc.firebaseapp.com",   projectId: "dronair-mc",   storageBucket: "dronair-mc.firebasestorage.app",   messagingSenderId: "661234543730",   appId: "1:661234543730:web:b459875bdadf9f7a6726eb" }; const app = initializeApp(firebaseConfig); const db = getFirestore(app); window._db = db;
 
-async function saveLogToFirebase(log) {
-  if (!db) return;
-  try {
-    await setDoc(doc(db, 'missioncontrol', 'leo_dronair_v5_log'), {
-      data: JSON.stringify(log),
-      ts: Date.now()
-    });
-  } catch(e) { console.warn('Firebase write error:', e); }
-}
 
-async function loadLogFromFirebase() {
-  if (!db) return null;
-  try {
-    const snap = await getDoc(doc(db, 'missioncontrol', 'leo_dronair_v5_log'));
-    if (snap.exists()) return JSON.parse(snap.data().data || '[]');
-  } catch(e) { console.warn('Firebase read error:', e); }
-  return null;
-}
 
-async function savePhasesToFirebase(data) {
-  if (!db) return;
-  try {
-    await setDoc(doc(db, 'missioncontrol', 'leo_dronair_v5_phases'), {
-      data: JSON.stringify(data), ts: Date.now()
-    });
-  } catch(e) { console.warn('Firebase phases write error:', e); }
-}
-
-async function loadPhasesFromFirebase() {
-  if (!db) return null;
-  try {
-    const snap = await getDoc(doc(db, 'missioncontrol', 'leo_dronair_v5_phases'));
-    if (snap.exists()) return JSON.parse(snap.data().data || '[]');
-  } catch(e) { console.warn('Firebase phases read error:', e); }
-  return null;
-}
-
-async function saveContactosToFirebase(data) {
-  if (!db) return;
-  try {
-    await setDoc(doc(db, 'missioncontrol', 'leo_dronair_v5_contactos'), {
-      data: JSON.stringify(data), ts: Date.now()
-    });
-  } catch(e) {}
-}
-
-async function loadContactosFromFirebase() {
-  if (!db) return null;
-  try {
-    const snap = await getDoc(doc(db, 'missioncontrol', 'leo_dronair_v5_contactos'));
-    if (snap.exists()) return JSON.parse(snap.data().data || '[]');
-  } catch(e) {}
-  return null;
-}
-
-async function saveCostesToFirebase(data) {
-  if (!db) return;
-  try {
-    await setDoc(doc(db, 'missioncontrol', 'leo_dronair_v5_costes'), {
-      data: JSON.stringify(data), ts: Date.now()
-    });
-  } catch(e) {}
-}
-
-async function loadCostesFromFirebase() {
-  if (!db) return null;
-  try {
-    const snap = await getDoc(doc(db, 'missioncontrol', 'leo_dronair_v5_costes'));
-    if (snap.exists()) return JSON.parse(snap.data().data || '[]');
-  } catch(e) {}
-  return null;
-}
 
 // ============ SYNC — localStorage + Firebase ============
 function setSyncBadge(state){
