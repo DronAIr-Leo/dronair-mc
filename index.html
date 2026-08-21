@@ -514,6 +514,7 @@ window._fbLoadAll = async function() {
     ]);
     return {
       log: logSnap.exists() ? JSON.parse(logSnap.data().data || '[]') : null,
+      phasesTs: phasesSnap.exists() ? (phasesSnap.data().ts||null) : null,
       phases: phasesSnap.exists() ? JSON.parse(phasesSnap.data().data || '[]') : null,
       contactos: contactosSnap.exists() ? JSON.parse(contactosSnap.data().data || '[]') : null,
       costes: costesSnap.exists() ? JSON.parse(costesSnap.data().data || '[]') : null,
@@ -541,64 +542,86 @@ window.dispatchEvent(new Event('firebase-ready'));
 <script>
 
 // ============ TURNOS ============
-const TURNOS={'2026-05-01':'N','2026-05-02':'N','2026-05-03':'N','2026-05-04':'L','2026-05-05':'L','2026-05-06':'L','2026-05-07':'L','2026-05-08':'PMICA','2026-05-09':'PMICA','2026-05-10':'PMICA','2026-05-11':'PMICA','2026-05-12':'PMICA','2026-05-14':'L','2026-05-15':'L','2026-05-16':'L','2026-05-17':'N','2026-05-18':'N','2026-05-19':'N','2026-05-20':'N','2026-05-21':'N','2026-05-22':'N','2026-05-23':'L','2026-05-24':'L','2026-05-25':'N','2026-05-26':'N','2026-05-27':'N','2026-05-28':'LFN','2026-05-29':'LFN','2026-05-30':'L','2026-05-31':'L','2026-06-01':'N','2026-06-02':'N','2026-06-03':'N','2026-06-04':'N','2026-06-05':'N','2026-06-06':'L','2026-06-07':'L','2026-06-08':'N','2026-06-09':'N','2026-06-10':'N','2026-06-11':'N','2026-06-12':'N','2026-06-13':'L','2026-06-14':'L','2026-06-15':'N','2026-06-16':'N','2026-06-17':'N','2026-06-18':'N','2026-06-19':'N','2026-06-20':'L','2026-06-21':'L','2026-06-22':'N','2026-06-23':'N','2026-06-24':'N','2026-06-25':'L','2026-06-26':'L','2026-06-27':'N','2026-06-28':'N','2026-06-29':'N','2026-06-30':'N','2026-07-01':'N','2026-07-02':'N','2026-07-03':'N','2026-07-04':'L','2026-07-05':'L','2026-07-06':'N','2026-07-07':'N','2026-07-08':'N','2026-07-09':'N','2026-07-10':'N','2026-07-11':'L','2026-07-12':'N','2026-07-13':'N','2026-07-14':'N','2026-07-15':'L','2026-07-16':'L','2026-07-17':'L','2026-07-18':'L','2026-07-19':'N','2026-07-20':'N','2026-07-21':'N','2026-07-22':'N','2026-07-23':'N','2026-07-24':'N','2026-07-25':'L','2026-07-26':'L','2026-07-27':'VN','2026-07-28':'VN','2026-07-29':'VN','2026-07-30':'VN','2026-07-31':'VN'};
-const TURN_CLS={'N':'ev-N','L':'ev-L','PMICA':'ev-PMICA','LFN':'ev-LFN','VN':'ev-VN'};
-const TURN_LABEL={'N':'🌙N','L':'✅LIBRE','PMICA':'🌅PMICA','LFN':'🟣LFN','VN':'🏖VN'};
+const TURNOS={'2026-05-01':'N','2026-05-02':'N','2026-05-03':'N','2026-05-04':'L','2026-05-05':'L','2026-05-06':'L','2026-05-07':'L','2026-05-08':'PMICA','2026-05-09':'PMICA','2026-05-10':'PMICA','2026-05-11':'PMICA','2026-05-12':'PMICA','2026-05-14':'L','2026-05-15':'L','2026-05-16':'L','2026-05-17':'N','2026-05-18':'N','2026-05-19':'N','2026-05-20':'N','2026-05-21':'N','2026-05-22':'N','2026-05-23':'L','2026-05-24':'L','2026-05-25':'N','2026-05-26':'N','2026-05-27':'N','2026-05-28':'LFN','2026-05-29':'LFN','2026-05-30':'L','2026-05-31':'L','2026-06-01':'N','2026-06-02':'N','2026-06-03':'N','2026-06-04':'N','2026-06-05':'N','2026-06-06':'L','2026-06-07':'L','2026-06-08':'N','2026-06-09':'N','2026-06-10':'N','2026-06-11':'N','2026-06-12':'N','2026-06-13':'L','2026-06-14':'L','2026-06-15':'N','2026-06-16':'N','2026-06-17':'N','2026-06-18':'N','2026-06-19':'N','2026-06-20':'L','2026-06-21':'L','2026-06-22':'N','2026-06-23':'N','2026-06-24':'N','2026-06-25':'L','2026-06-26':'L','2026-06-27':'N','2026-06-28':'N','2026-06-29':'N','2026-06-30':'N','2026-07-01':'N','2026-07-02':'N','2026-07-03':'N','2026-07-04':'L','2026-07-05':'L','2026-07-06':'N','2026-07-07':'N','2026-07-08':'N','2026-07-09':'N','2026-07-10':'N','2026-07-11':'L','2026-07-12':'N','2026-07-13':'N','2026-07-14':'N','2026-07-15':'L','2026-07-16':'L','2026-07-17':'L','2026-07-18':'L','2026-07-19':'N','2026-07-20':'N','2026-07-21':'N','2026-07-22':'N','2026-07-23':'N','2026-07-24':'N','2026-07-25':'L','2026-07-26':'L','2026-07-27':'VN','2026-07-28':'VN','2026-07-29':'VN','2026-07-30':'VN','2026-07-31':'VN',
+  // ===== AGO-DIC 2026 (ago-sep reales; oct-dic teoricos) =====
+  '2026-08-01':'L','2026-08-02':'L','2026-08-03':'L','2026-08-04':'L','2026-08-05':'VN','2026-08-06':'VN','2026-08-07':'VN','2026-08-08':'VN','2026-08-09':'VN','2026-08-10':'L','2026-08-11':'L','2026-08-12':'L','2026-08-13':'L','2026-08-14':'L','2026-08-15':'L','2026-08-16':'L','2026-08-17':'N','2026-08-18':'N','2026-08-19':'N','2026-08-20':'N','2026-08-21':'PMICAT-N','2026-08-22':'PMICAT-N','2026-08-23':'PMICAT-N','2026-08-24':'PMICAT-N','2026-08-25':'VI','2026-08-26':'L','2026-08-27':'N','2026-08-28':'LFN','2026-08-29':'N','2026-08-30':'N','2026-08-31':'N',
+  '2026-09-01':'N','2026-09-02':'N','2026-09-03':'N','2026-09-04':'N','2026-09-05':'L','2026-09-06':'L','2026-09-07':'N','2026-09-08':'N','2026-09-09':'N','2026-09-10':'N','2026-09-11':'N','2026-09-12':'L','2026-09-13':'L','2026-09-14':'N','2026-09-15':'N','2026-09-16':'N','2026-09-17':'N','2026-09-18':'LFN','2026-09-19':'L','2026-09-20':'L','2026-09-21':'N','2026-09-22':'N','2026-09-23':'N','2026-09-24':'N','2026-09-25':'N','2026-09-26':'L','2026-09-27':'L','2026-09-28':'N','2026-09-29':'N','2026-09-30':'N',
+  '2026-10-01':'L','2026-10-02':'L','2026-10-03':'N','2026-10-04':'N','2026-10-05':'N','2026-10-06':'N','2026-10-07':'N','2026-10-08':'N','2026-10-09':'L','2026-10-10':'L','2026-10-11':'L','2026-10-12':'LFN','2026-10-13':'N','2026-10-14':'N','2026-10-15':'N','2026-10-16':'L','2026-10-17':'L','2026-10-18':'N','2026-10-19':'N','2026-10-20':'N','2026-10-21':'L','2026-10-22':'L','2026-10-23':'L','2026-10-24':'L','2026-10-25':'N','2026-10-26':'N','2026-10-27':'N','2026-10-28':'N','2026-10-29':'N','2026-10-30':'N','2026-10-31':'L',
+  '2026-11-01':'L','2026-11-02':'N','2026-11-03':'N','2026-11-04':'N','2026-11-05':'N','2026-11-06':'LFN','2026-11-07':'L','2026-11-08':'L','2026-11-09':'L','2026-11-10':'L','2026-11-11':'LFN','2026-11-12':'LFN','2026-11-13':'LFN','2026-11-14':'N','2026-11-15':'N','2026-11-16':'L','2026-11-17':'L','2026-11-18':'N','2026-11-19':'N','2026-11-20':'N','2026-11-21':'N','2026-11-22':'N','2026-11-23':'N','2026-11-24':'N','2026-11-25':'L','2026-11-26':'L','2026-11-27':'L','2026-11-28':'VN','2026-11-29':'VN','2026-11-30':'VN',
+  '2026-12-01':'VN','2026-12-02':'VN','2026-12-03':'VN','2026-12-04':'VN','2026-12-05':'L','2026-12-06':'L','2026-12-07':'N','2026-12-08':'N','2026-12-09':'N','2026-12-10':'N','2026-12-11':'LFN','2026-12-12':'L','2026-12-13':'L','2026-12-14':'N','2026-12-15':'N','2026-12-16':'N','2026-12-17':'N','2026-12-18':'N','2026-12-19':'L','2026-12-20':'L','2026-12-21':'N','2026-12-22':'N','2026-12-23':'N','2026-12-24':'N','2026-12-25':'N','2026-12-26':'L','2026-12-27':'L','2026-12-28':'N','2026-12-29':'N','2026-12-30':'N','2026-12-31':'LFN'};
+const TURN_CLS={'N':'ev-N','L':'ev-L','PMICA':'ev-PMICA','PMICAT-N':'ev-PMICA','LFN':'ev-LFN','VI':'ev-LFN','VN':'ev-VN'};
+const TURN_LABEL={'N':'🌙N','L':'✅LIBRE','PMICA':'🌅PMICA','PMICAT-N':'🌅PM-N','LFN':'🟣LFN','VI':'🟪VI','VN':'🏖VN'};
 const TURN_FREE={'L':true,'LFN':true,'VN':true};
 
 // ============ DEFAULTS ============
 const DEFAULT_PHASES=[
-  {title:'FASE 1 — LICENCIAS Y BASE LEGAL',period:'MAYO–JULIO 2026',collapsed:false,tasks:[
-    {id:1,title:'Examen piloto A1/A3 AESA — ref. 2026/LPAE0/015702',tags:['urgente','gratis'],done:false,docs:[{name:'Solicitud matriculación A1/A3',expediente:'2026/LPAE0/015702',entidad:'AESA',fecha:'04/05/2026',vencimiento:'2026-06-07',notes:'Practicando en app — notas 90-95%. Límite 07/06/2026',fileData:null,fileName:''}]},
-    {id:2,title:'Confirmar número operador AESA activo',tags:['gratis'],done:true,docs:[]},
-    {id:4,title:'ROLECE — Notaría Riba-roja viernes 15/05 · Ctra. Vilamarxant 115 · Tel 962 77 92 77',tags:['urgente','gratis'],done:false,docs:[{name:'Carátulas ROLECE',expediente:'2026\\009613',entidad:'ROLECE',fecha:'07/05/2026',vencimiento:'2026-05-21',notes:'Llevar DNI original + carátula impresa. Pedir copia auténtica DNI firmada electrónicamente. Subir via "Anexar Documento Acreditativo"',fileData:null,fileName:''}]},
-    {id:3,title:'Asepeyo Doc. 8001-799732 — enviado firmado ✅',tags:['gratis'],done:true,docs:[{name:'Documento Asepeyo',expediente:'8001-799732',entidad:'Asepeyo',fecha:'',vencimiento:'',notes:'Enviar firmado a asepeyo@asepeyo.es',fileData:null,fileName:''}]},
-    {id:37,title:'AESA — Completar registro UAS operator en sede.seguridadaerea.gob.es/AESA_UAS',tags:['urgente','gratis'],done:false,docs:[]},
-    {id:45,title:'ROLECE subsanación ✅ 18/05 · Cert.AEAT + SS presentados',tags:['gratis'],done:true,deadline:'',driveLink:'',_linkOpen:false},
-    {id:5,title:'Alta Registro de Contratistas GVA',tags:['gratis'],done:false,docs:[]},
-    {id:6,title:'Activar email dronair@dron-air.es',tags:['gratis'],done:true,docs:[]},
-    {id:8,title:'IVACE PR-110633 — Subsanación carta intención ai2 UPV presentada el 12/05/2026',tags:['gratis'],done:true,docs:[{name:'Carta Intención ai2 UPV — Miguel Esparza',expediente:'IMINOD/2026/39',entidad:'IVACE / ai2 UPV',fecha:'12/05/2026',vencimiento:'',notes:'Firmada por Miguel Esparza Manzano (Gerente ai2 UPV). Presentada vía sede.gva.es. Justificante en Drive carpeta IVACE',fileData:null,fileName:''}]},
-    {id:35,title:'Certificado digital representante DronAIr',tags:['gratis'],done:false,docs:[]},
-    {id:9,title:'ROLECE solicitud online completada — Nº ROLECE2026E000032119',tags:['gratis'],done:true,docs:[]},
+  {title:'FASE 1 — LICENCIAS Y BASE LEGAL',period:'ABRIL–JULIO 2026',collapsed:false,tasks:[
+    {id:1,title:'Examen piloto A1/A3 AESA — APTO 9/10',tags:['urgente','formacion'],done:true,estado:'hecha',docs:[]},
+    {id:2,title:'Registro operador UAS ACTIVO — Nº ESPcao88hyo2x2ge (re-registrado 13/07)',tags:['urgente','gratis'],done:true,estado:'hecha',docs:[]},
+    {id:59,title:'⏳ Curso puente STS AESA — exp. 2026/LPAG0/007688',tags:['formacion'],done:false,estado:'en curso',docs:[]},
+    {id:4,title:'ROLECE — notaría Riba-roja',tags:['gratis'],done:true,estado:'hecha',docs:[]},
+    {id:9,title:'ROLECE solicitud online — ROLECE2026E000032119',tags:['gratis'],done:true,estado:'hecha',docs:[]},
+    {id:45,title:'ROLECE subsanación — Cert. AEAT + SS',tags:['gratis'],done:true,estado:'hecha',docs:[]},
+    {id:47,title:'ROLECE Acuerdo definitivo — ROLECE2026S000035744',tags:['gratis'],done:true,estado:'hecha',docs:[]},
+    {id:3,title:'Asepeyo Doc. 8001-799732',tags:['gratis'],done:true,estado:'hecha',docs:[]},
+    {id:6,title:'Email dronair@dron-air.es',tags:['gratis'],done:true,estado:'hecha',docs:[]},
+    {id:8,title:'IVACE PR-110633 — subsanación carta ai2 UPV',tags:['gratis'],done:true,estado:'hecha',docs:[]},
+    {id:61,title:'RENTA 2025 — presentada, devolución 675,95€',tags:['gratis'],done:true,estado:'hecha',docs:[]},
+    {id:62,title:'⏳ Modelo 130+303 2T — 130 saneado · 303 VERIFICAR',tags:['gratis'],done:false,estado:'en curso',docs:[]},
+    {id:64,title:'Revisar 2 notificaciones Ayto. Valencia (19/07, con acuse)',tags:['urgente'],done:false,estado:'pendiente',docs:[]},
+    {id:5,title:'Alta Registro Contratistas GVA',tags:['gratis'],done:false,estado:'pendiente',docs:[]},
+    {id:35,title:'Certificado digital representante DronAIr',tags:['gratis'],done:false,estado:'pendiente',docs:[]},
   ]},
-  {title:'FASE 2 — FORMACIÓN Y VISIBILIDAD',period:'MAYO–JULIO 2026',collapsed:false,tasks:[
-    {id:38,title:'IES Serrà Perenxisa — Preinscripción IABD en AdmiNOVA (20-28 mayo)',tags:['urgente','formacion'],done:false,docs:[]},
-    {id:39,title:'Formación Digital PYMES Virensis/EOI — Aula Virtual · 14/05–19/06 · Hacer MOOC pronto',tags:['urgente','formacion'],done:false,docs:[{name:'Convocatoria Formación Digital PYMES',expediente:'AF1 Grupo 83',entidad:'Virensis / EOI',fecha:'13/05/2026',vencimiento:'2026-06-19',notes:'Login: ect.cursosvirensis.es · Usuario/pass = DNI minúscula. Zoom. Completar MOOC Generación Digital antes de fin de programa.',fileData:null,fileName:''}]},
-    {id:40,title:'Teledetección y GIS — hasta 21/05 (martes-jueves)',tags:['urgente','formacion'],done:false,docs:[]},
-    {id:10,title:'Activar LinkedIn DronAIr empresa + perfil personal bilingüe',tags:['gratis'],done:false,docs:[]},
-    {id:11,title:'Optimizar web dron-air.es con palabras clave SEO',tags:['gratis','comercial'],done:true,docs:[]},
-    {id:12,title:'Alta Google Business Profile',tags:['gratis','comercial'],done:false,docs:[]},
-    {id:13,title:'Mail enviado director IES La Marxadella',tags:['comercial','gratis'],done:true,docs:[{name:'Mail enviado — Director IES La Marxadella',expediente:'',entidad:'IES La Marxadella',fecha:'04/05/2026',vencimiento:'',notes:'Presentación DronAIr: difusión, contactos ayuntamientos, plaza IA Big Data',fileData:null,fileName:''}]},
-    {id:36,title:'AsDrón Spain — Contactado, derivado al área correspondiente',tags:['comercial'],done:false,docs:[{name:'Contacto AsDrón Spain',expediente:'',entidad:'AsDrón Spain',fecha:'04/05/2026',vencimiento:'',notes:'Respondieron: derivado al área correspondiente. Pendiente respuesta definitiva',fileData:null,fileName:''}]},
-    {id:41,title:'Juan Bru — Confirmar fecha primera llamada (juan_bru@hotmail.es)',tags:['comercial','gratis'],done:false,docs:[]},
-    {id:15,title:'IES Serrà Perenxisa — Matrícula presencial en centro (julio)',tags:['formacion'],done:false,docs:[]},
-    {id:16,title:'Localizar técnico Ayuntamiento Torrent',tags:['comercial','gratis'],done:false,docs:[]},
-    {id:17,title:'Preparar dossier de servicios DronAIr en PDF',tags:['gratis','comercial'],done:false,docs:[]},
-    {id:18,title:'Publicar artículo LinkedIn: drones en prevención DANA Valencia',tags:['comercial','gratis'],done:false,docs:[]},
-    {id:42,title:'Mission Control v4.3 — desplegar en GitHub con calendario y turnos Air Nostrum',tags:['gratis'],done:false,docs:[]},
-    {id:19,title:'Contactar EDOS 2026 — Vicente Fernández, Feria Valencia dic',tags:['comercial','gratis'],done:false,docs:[]},
+  {title:'FASE 2 — FORMACIÓN Y VISIBILIDAD',period:'MAYO–OCTUBRE 2026',collapsed:false,tasks:[
+    {id:38,title:'Preinscripción IABD AdmiNOVA — no admitido, 2ª opción octubre',tags:['formacion'],done:true,estado:'hecha',docs:[]},
+    {id:39,title:'Formación Digital PYMES Virensis — APTO',tags:['formacion'],done:true,estado:'hecha',docs:[]},
+    {id:40,title:'Teledetección y GIS — finalizado 30/07',tags:['formacion'],done:true,estado:'hecha',docs:[]},
+    {id:10,title:'LinkedIn empresa + perfil personal',tags:['gratis'],done:true,estado:'hecha',docs:[]},
+    {id:11,title:'SEO web dron-air.es',tags:['gratis','comercial'],done:true,estado:'hecha',docs:[]},
+    {id:12,title:'Alta Google Business Profile',tags:['gratis','comercial'],done:true,estado:'hecha',docs:[]},
+    {id:13,title:'Mail director IES La Marxadella',tags:['comercial','gratis'],done:true,estado:'hecha',docs:[]},
+    {id:18,title:'Artículo LinkedIn DANA',tags:['comercial','gratis'],done:true,estado:'hecha',docs:[]},
+    {id:46,title:'Mail admisión extraordinaria IES Serrà',tags:['formacion'],done:true,estado:'hecha',docs:[]},
+    {id:42,title:'⏳ Mission Control v6 — sync + turnos + estados',tags:['gratis'],done:false,estado:'en curso',docs:[]},
+    {id:48,title:'⏳ Certificado notas curso drones La Marxadella — verificar',tags:['formacion'],done:false,estado:'en curso',docs:[]},
+    {id:15,title:'⏸ IES Serrà Perenxisa — 2ª oportunidad octubre',tags:['formacion'],done:false,estado:'en espera',docs:[]},
+    {id:36,title:'AsDrón Spain — derivado',tags:['comercial'],done:false,estado:'pendiente',docs:[]},
+    {id:41,title:'Juan Bru — primera llamada',tags:['comercial','gratis'],done:false,estado:'pendiente',docs:[]},
+    {id:17,title:'Dossier de servicios DronAIr PDF',tags:['gratis','comercial'],done:false,estado:'pendiente',docs:[]},
+    {id:19,title:'Contactar EDOS 2026 — Vicente Fernández',tags:['comercial','gratis'],done:false,estado:'pendiente',docs:[]},
+    {id:65,title:'Consolidar LOGs duplicados en Drive',tags:['gratis'],done:false,estado:'pendiente',docs:[]},
   ]},
-  {title:'FASE 3 — LICITACIONES Y OPERACIONES',period:'JUNIO–SEPTIEMBRE 2026',collapsed:false,tasks:[
-    {id:43,title:'Análisis y solicitud próximas ayudas y subvenciones (CDTI, Kit Digital, GVA, Horizon)',tags:['urgente','gratis'],done:false,docs:[]},
-    {id:20,title:'Activar alertas licitación PLACSP',tags:['urgente','gratis'],done:false,docs:[]},
-    {id:21,title:'Contratar seguro RC profesional UAS',tags:['coste'],done:false,docs:[]},
-    {id:22,title:'Presentar primera oferta a contrato menor ayuntamiento',tags:['comercial','gratis'],done:false,docs:[]},
-    {id:23,title:'Demostración operativa ante técnico municipal',tags:['comercial'],done:false,docs:[]},
-    {id:24,title:'Inicio curso IA y Big Data IES Serrà Perenxisa — octubre 2026',tags:['formacion'],done:false,docs:[]},
-    {id:25,title:'Publicar 2 posts/semana en LinkedIn',tags:['comercial','gratis'],done:false,docs:[]},
-    {id:26,title:'Resolución IVACE INNOVA-CV 2026 — IMINOD/2026/39',tags:['urgente','gratis'],done:false,docs:[]},
-    {id:27,title:'Iniciar roadmap licencia STS-02',tags:['formacion','coste'],done:false,docs:[]},
+  {title:'FASE 3 — LICITACIONES Y OPERACIONES',period:'JUNIO–DICIEMBRE 2026',collapsed:false,tasks:[
+    {id:60,title:'⏳ Ruta LUC (Light UAS operator Certificate)',tags:['estrategia'],done:false,estado:'en curso',docs:[]},
+    {id:21,title:'Contratar seguro RC profesional UAS (registro consta sin póliza)',tags:['coste'],done:false,estado:'pendiente',docs:[]},
+    {id:43,title:'Análisis ayudas (CDTI, Kit Digital, GVA, Horizon)',tags:['urgente','gratis'],done:false,estado:'pendiente',docs:[]},
+    {id:20,title:'Activar alertas licitación PLACSP',tags:['urgente','gratis'],done:false,estado:'pendiente',docs:[]},
+    {id:26,title:'Resolución IVACE INNOVA-CV — IMINOD/2026/39',tags:['urgente','gratis'],done:false,estado:'pendiente',docs:[]},
+    {id:22,title:'Primera oferta contrato menor (Riba-roja)',tags:['comercial','gratis'],done:false,estado:'pendiente',docs:[]},
+    {id:24,title:'Inicio curso IABD (si entra en octubre)',tags:['formacion'],done:false,estado:'pendiente',docs:[]},
+    {id:66,title:'Cargar facturas en Economía',tags:['gratis'],done:false,estado:'pendiente',docs:[]},
   ]},
-  {title:'FASE 4 — DESPEGUE OPERACIONAL',period:'OCTUBRE 2026 → ENERO 2027',collapsed:false,tasks:[
-    {id:28,title:'Recepción financiación IVACE — adquisición equipamiento',tags:['coste'],done:false,docs:[]},
-    {id:29,title:'Primeros servicios piloto con cliente real',tags:['comercial'],done:false,docs:[]},
-    {id:30,title:'TFC IES Serrà Perenxisa: drones en enjambre con IA',tags:['formacion'],done:false,docs:[]},
-    {id:31,title:'Presentación DronAIr en EDOS 2026 — Feria Valencia 16-17 dic',tags:['comercial'],done:false,docs:[]},
-    {id:44,title:'Alianza estratégica drones+UGV con Juan Bru',tags:['comercial','gratis'],done:false,docs:[]},
-    {id:32,title:'Propuesta servicios 2027 para ayuntamientos valencianos',tags:['comercial','gratis'],done:false,docs:[]},
-    {id:33,title:'Análisis líneas financiación 2027',tags:['gratis'],done:false,docs:[]},
-    {id:34,title:'Primera factura emitida — DronAIr operativa',tags:['comercial'],done:false,docs:[]},
-  ]}
+  {title:'FASE IA — DESARROLLO IA & MANUAL DE OPERACIONES',period:'JUNIO 2026 →',collapsed:false,tasks:[
+    {id:49,title:'⏳ Módulo 1 — Detección inundaciones (teledetección)',tags:['desarrollo','ia'],done:false,estado:'en curso',docs:[]},
+    {id:50,title:'⏳ Módulo 2 — Localización térmica personas',tags:['desarrollo','ia'],done:false,estado:'en curso',docs:[]},
+    {id:51,title:'⏳ Módulo 3 — Predicción propagación incendios (ACTIVO)',tags:['desarrollo','ia'],done:false,estado:'en curso',docs:[]},
+    {id:52,title:'Módulo 4 — Análisis evolución terreno',tags:['desarrollo','ia'],done:false,estado:'pendiente',docs:[]},
+    {id:53,title:'Módulo 5 — Alertas calibradas',tags:['desarrollo','ia'],done:false,estado:'pendiente',docs:[]},
+    {id:54,title:'⏳ Manual de Operaciones (MOE) — estructura base',tags:['gratis'],done:false,estado:'en curso',docs:[]},
+    {id:55,title:'⏳ MOE Cap.1 — Datos operador y aeronaves',tags:['gratis'],done:false,estado:'en curso',docs:[]},
+    {id:56,title:'MOE Cap.2 — Estructura organizativa',tags:['gratis'],done:false,estado:'pendiente',docs:[]},
+    {id:57,title:'MOE Cap.3 — Procedimientos operacionales',tags:['gratis'],done:false,estado:'pendiente',docs:[]},
+    {id:58,title:'MOE Cap.4 — Gestión riesgos SORA',tags:['gratis'],done:false,estado:'pendiente',docs:[]},
+  ]},
+  {title:'FASE 4 — DESPEGUE OPERACIONAL',period:'OCTUBRE 2026 → 2027',collapsed:false,tasks:[
+    {id:63,title:'⏳ Dronavia — partnership Valencia/Levante (ACTIVO)',tags:['comercial'],done:false,estado:'en curso',docs:[]},
+    {id:28,title:'Recepción financiación IVACE',tags:['coste'],done:false,estado:'pendiente',docs:[]},
+    {id:29,title:'Primeros servicios piloto cliente real',tags:['comercial'],done:false,estado:'pendiente',docs:[]},
+    {id:30,title:'TFC drones enjambre con IA',tags:['formacion'],done:false,estado:'pendiente',docs:[]},
+    {id:31,title:'Presentación DronAIr EDOS 2026',tags:['comercial'],done:false,estado:'pendiente',docs:[]},
+    {id:44,title:'Alianza drones+UGV con Juan Bru',tags:['comercial','gratis'],done:false,estado:'pendiente',docs:[]},
+    {id:34,title:'Primera factura emitida',tags:['comercial'],done:false,estado:'pendiente',docs:[]},
+  ]},
 ];
 
 const DEFAULT_CONTACTOS=[
@@ -964,6 +987,48 @@ document.addEventListener('DOMContentLoaded', ()=>{
   window.addEventListener('firebase-ready', loadFromFirebase);
   setTimeout(loadFromFirebase, 2000); // fallback por si el evento ya paso
 });
+</script>
+
+<script>
+(function(){
+  function fmt(ts){ if(!ts) return null; var d=new Date(ts); return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear()+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); }
+  function build(){
+    if(document.getElementById('mc-syncbar')) return;
+    var bar=document.createElement('div');
+    bar.id='mc-syncbar';
+    bar.style.cssText='position:fixed;top:8px;right:8px;z-index:99999;display:flex;gap:8px;align-items:center;font:12px/1.3 system-ui,sans-serif';
+    var badge=document.createElement('span');
+    badge.id='mc-syncbadge';
+    badge.style.cssText='padding:5px 9px;border-radius:8px;background:#334155;color:#e2e8f0;box-shadow:0 1px 4px rgba(0,0,0,.3)';
+    badge.textContent='Sync: comprobando…';
+    var btn=document.createElement('button');
+    btn.textContent='☁️ Sincronizar ahora';
+    btn.style.cssText='padding:6px 11px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:600;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.3)';
+    btn.onclick=async function(){
+      if(!window._fbSavePhases){alert('Firebase aún no está listo, espera unos segundos.');return;}
+      if(!confirm('Empujar el estado base v3 a la nube. Sobrescribe lo que haya en Firestore. ¿Seguir?'))return;
+      btn.disabled=true;btn.textContent='Sincronizando…';
+      try{ await window._fbSavePhases(DEFAULT_PHASES); badge.textContent='Sync: '+fmt(Date.now())+' ✅'; badge.style.background='#166534'; alert('Sincronizado a la nube ✅ Recargando…'); location.reload(); }
+      catch(e){ alert('Error al sincronizar: '+e); btn.disabled=false; btn.textContent='☁️ Sincronizar ahora'; }
+    };
+    bar.appendChild(badge);bar.appendChild(btn);document.body.appendChild(bar);
+    refresh(badge);
+  }
+  async function refresh(badge){
+    try{
+      if(!window._fbLoadAll){badge.textContent='Sync: sin conexión';return;}
+      var d=await window._fbLoadAll();
+      var ts=d&&d.phasesTs;
+      if(!ts){ badge.textContent='⚠ Sin sincronizar nunca'; badge.style.background='#b91c1c'; return; }
+      var dias=(Date.now()-ts)/86400000;
+      badge.textContent='Última sync: '+fmt(ts);
+      badge.style.background = dias>7 ? '#b91c1c' : (dias>3 ? '#b45309' : '#166534');
+      if(dias>7) badge.textContent='⚠ Sync ANTIGUA: '+fmt(ts);
+    }catch(e){ badge.textContent='Sync: error'; }
+  }
+  if(window._db) build(); else window.addEventListener('firebase-ready',build);
+  setTimeout(build,3000);
+})();
 </script>
 </body>
 </html>
